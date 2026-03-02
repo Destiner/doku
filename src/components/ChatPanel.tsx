@@ -150,6 +150,34 @@ export function ChatPanel({ docId, onTitleUpdate }: Props) {
         )}
         <div ref={sentinelRef} />
       </div>
+      {messageQueue.length > 0 && (
+        <div className={styles.queueSection}>
+          <div
+            className={styles.queueHeader}
+            onClick={() => setQueueCollapsed((c) => !c)}
+          >
+            <i
+              className={`ph ph-caret-right ${styles.queueCaret} ${!queueCollapsed ? styles.queueCaretExpanded : ""}`}
+            />
+            {messageQueue.length} queued message{messageQueue.length !== 1 ? "s" : ""}
+          </div>
+          {!queueCollapsed && (
+            <div className={styles.queueList}>
+              {messageQueue.map((msg, i) => (
+                <div key={i} className={styles.queueItem}>
+                  <span className={styles.queueItemText}>{msg}</span>
+                  <button
+                    className={styles.queueItemRemove}
+                    onClick={() => removeQueuedMessage(i)}
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <div className={styles.inputArea}>
         {atQuery !== null && (
           <FileSelector
@@ -160,34 +188,6 @@ export function ChatPanel({ docId, onTitleUpdate }: Props) {
             onSelect={handleFileSelect}
             files={selectorFiles}
           />
-        )}
-        {messageQueue.length > 0 && (
-          <div className={styles.queueSection}>
-            <div
-              className={styles.queueHeader}
-              onClick={() => setQueueCollapsed((c) => !c)}
-            >
-              <i
-                className={`ph ph-caret-right ${styles.queueCaret} ${!queueCollapsed ? styles.queueCaretExpanded : ""}`}
-              />
-              {messageQueue.length} queued message{messageQueue.length !== 1 ? "s" : ""}
-            </div>
-            {!queueCollapsed && (
-              <div className={styles.queueList}>
-                {messageQueue.map((msg, i) => (
-                  <div key={i} className={styles.queueItem}>
-                    <span className={styles.queueItemText}>{msg}</span>
-                    <button
-                      className={styles.queueItemRemove}
-                      onClick={() => removeQueuedMessage(i)}
-                    >
-                      <X size={10} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         )}
         <textarea
           ref={textareaRef}

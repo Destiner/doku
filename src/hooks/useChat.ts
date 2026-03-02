@@ -312,37 +312,11 @@ export function useChat(
   }, [docId, onTitleUpdate]);
 
   const queueMessage = useCallback((prompt: string) => {
-    // Add user message to UI immediately
-    const userMsg: ChatMessage = {
-      role: "user",
-      segments: [{ type: "text", content: prompt }],
-    };
-    setMessages((prev) => [...prev, userMsg]);
     setMessageQueue((prev) => [...prev, prompt]);
   }, []);
 
   const removeQueuedMessage = useCallback((index: number) => {
     setMessageQueue((prev) => {
-      const content = prev[index];
-      if (content !== undefined) {
-        // Remove the corresponding user message from the chat UI
-        setMessages((msgs) => {
-          // Find this queued message among the trailing user messages
-          const updated = [...msgs];
-          for (let i = updated.length - 1; i >= 0; i--) {
-            const msg = updated[i];
-            if (
-              msg.role === "user" &&
-              msg.segments[0]?.type === "text" &&
-              msg.segments[0].content === content
-            ) {
-              updated.splice(i, 1);
-              break;
-            }
-          }
-          return updated;
-        });
-      }
       const next = [...prev];
       next.splice(index, 1);
       return next;
