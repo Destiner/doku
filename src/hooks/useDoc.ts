@@ -30,7 +30,10 @@ export function useDoc(docId: string | null) {
   const handleInput = useCallback(() => {
     if (textareaRef.current) setContent(textareaRef.current.value);
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
-    saveTimeout.current = setTimeout(saveDoc, 300);
+    saveTimeout.current = setTimeout(() => {
+      saveTimeout.current = null;
+      saveDoc();
+    }, 300);
   }, [saveDoc]);
 
   useEffect(() => {
