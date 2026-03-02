@@ -1,0 +1,128 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+
+export interface DocEntry {
+  id: string;
+  name: string;
+  title?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function useDocs() {
+  const [docs, setDocs] = useState<DocEntry[]>([]);
+  const [activeDoc, setActiveDocState] = useState<string | null>(null);
+  const activeDocRef = useRef<string | null>(null);
+  activeDocRef.current = activeDoc;
+
+  const fetchDocs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/docs");
+      const { docs: list } = (await res.json()) as { docs: DocEntry[] };
+      list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      setDocs(list);
+      return list;
+    } catch (err) {
+      console.error("Failed to fetch docs:", err);
+      return [];
+    }
+  }, []);
+
+  const setActiveDoc = useCallback((id: string | null) => {
+    const prevId = activeDocRef.current;
+    setActiveDocState(id);
+    if (id) {
+      fetch("/api/last-opened", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ docId: id }),
+      }).catch((err) => console.error("Failed to persist last opened:", err));
+    }
+    if (prevId && prevId !== id) {
+      fetch(`/api/doc/${encodeURIComponent(prevId)}?ifEmpty`, {
+        method: "DELETE",
+      })
+        .then((res) => res.json())
+        .then(({ deleted }: { deleted: boolean }) => {
+          if (deleted) {
+            setDocs((prev) => prev.filter((d) => d.id !== prevId));
+          }
+        })
+        .catch((err) => console.error("Failed to cleanup empty doc:", err));
+    }
+  }, []);
+
+  const createDoc = useCallback(async () => {
+    try {
+      const res = await fetch("/api/docs", { method: "POST" });
+      const { id, name } = (await res.json()) as { id: string; name: string };
+      const now = new Date().toISOString();
+      setDocs((prev) => [
+        { id, name, createdAt: now, updatedAt: now },
+        ...prev,
+      ]);
+      setActiveDoc(id);
+    } catch (err) {
+      console.error("Failed to create doc:", err);
+    }
+  }, [setActiveDoc]);
+
+  const deleteDoc = useCallback(
+    async (id: string) => {
+      try {
+        await fetch(`/api/doc/${encodeURIComponent(id)}`, {
+          method: "DELETE",
+        });
+        setDocs((prev) => {
+          const next = prev.filter((d) => d.id !== id);
+          if (activeDocRef.current === id) {
+            setActiveDoc(next.length > 0 ? next[0].id : null);
+          }
+          return next;
+        });
+      } catch (err) {
+        console.error("Failed to delete doc:", err);
+      }
+    },
+    [setActiveDoc],
+  );
+
+  useEffect(() => {
+    async function init() {
+      const list = await fetchDocs();
+      if (list.length === 0) {
+        const res = await fetch("/api/docs", { method: "POST" });
+        const { id, name } = (await res.json()) as { id: string; name: string };
+        const now = new Date().toISOString();
+        setDocs([{ id, name, createdAt: now, updatedAt: now }]);
+        setActiveDocState(id);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/last-opened");
+        const { docId } = (await res.json()) as { docId: string | null };
+        if (docId && list.some((d) => d.id === docId)) {
+          setActiveDocState(docId);
+          return;
+        }
+      } catch {
+        // fall through to default
+      }
+      setActiveDocState(list[0].id);
+    }
+    init();
+  }, [fetchDocs]);
+
+  const updateDocTitle = useCallback((docId: string, title: string) => {
+    setDocs((prev) => prev.map((d) => (d.id === docId ? { ...d, title } : d)));
+  }, []);
+
+  return {
+    docs,
+    activeDoc,
+    setActiveDoc,
+    createDoc,
+    deleteDoc,
+    updateDocTitle,
+  };
+}

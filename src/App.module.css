@@ -1,0 +1,101 @@
+.header {
+  padding: 12px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.modeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fafafa;
+  color: #666;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.modeToggle:hover {
+  background: #eee;
+  color: #333;
+}
+
+.modeToggleActive {
+  background: #333;
+  color: #fff;
+  border-color: #333;
+}
+
+.modeToggleActive:hover {
+  background: #444;
+  color: #fff;
+}
+
+.docSwitcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.docSelect {
+  font-size: 13px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fafafa;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+}
+
+.docSelect:focus {
+  border-color: #aaa;
+}
+
+.createBtn,
+.copyPathBtn,
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fafafa;
+  color: #666;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.createBtn:hover,
+.copyPathBtn:hover {
+  background: #eee;
+  color: #333;
+}
+
+.deleteBtn:hover {
+  background: #fee;
+  color: #c33;
+  border-color: #dcc;
+}
+
+.container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

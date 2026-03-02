@@ -1,0 +1,29 @@
+{
+  "name": "doku",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "concurrently \"NODE_ENV=development bun run --watch server.ts\" \"bunx vite\"",
+    "build": "bunx vite build",
+    "start": "bun run server.ts",
+    "pack": "bun run build && bun run scripts/pack.ts"
+  },
+  "dependencies": {
+    "@codemirror/lang-markdown": "^6.5.0",
+    "@lezer/highlight": "^1.2.3",
+    "@phosphor-icons/react": "^2.1.10",
+    "@vitejs/plugin-react": "^5.1.4",
+    "codemirror": "^6.0.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "shiki": "^4.0.0",
+    "vite": "^7.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.3"
+  }
+}

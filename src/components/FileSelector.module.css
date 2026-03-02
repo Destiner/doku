@@ -1,0 +1,28 @@
+.popup {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 4px;
+  z-index: 10;
+}
+
+.item {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: monospace;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active {
+  background: #f0f0f0;
+}
