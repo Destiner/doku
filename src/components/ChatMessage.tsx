@@ -1,10 +1,15 @@
 import { useState } from "react";
-import type { ChatMessage as ChatMessageType, MessageSegment } from "../hooks/useChat";
+import type {
+  ChatMessage as ChatMessageType,
+  MessageSegment,
+} from "../hooks/useChat";
 import { MarkdownContent } from "./MarkdownContent";
+import { AskUserBlock } from "./AskUserBlock";
 import styles from "./ChatMessage.module.css";
 
 interface Props {
   message: ChatMessageType;
+  onSubmitAnswers?: (answers: Record<string, string>) => void;
 }
 
 function ToolCallsBlock({
@@ -31,7 +36,8 @@ function ToolCallsBlock({
         <div>
           {segment.calls.map((call, i) => (
             <div key={i} className={styles.toolCall}>
-              <strong>{call.label}</strong>{call.detail ? ` ${call.detail}` : ""}
+              <strong>{call.label}</strong>
+              {call.detail ? ` ${call.detail}` : ""}
             </div>
           ))}
         </div>
@@ -40,11 +46,13 @@ function ToolCallsBlock({
   );
 }
 
-export function ChatMessage({ message }: Props) {
+export function ChatMessage({ message, onSubmitAnswers }: Props) {
   const isUser = message.role === "user";
 
   return (
-    <div className={`${styles.message} ${isUser ? styles.user : styles.assistant}`}>
+    <div
+      className={`${styles.message} ${isUser ? styles.user : styles.assistant}`}
+    >
       <div
         className={`${styles.label} ${isUser ? styles.userLabel : styles.assistantLabel}`}
       >
@@ -59,6 +67,15 @@ export function ChatMessage({ message }: Props) {
             </div>
           ) : (
             <MarkdownContent key={i} content={segment.content} />
+          );
+        }
+        if (segment.type === "askUser") {
+          return (
+            <AskUserBlock
+              key={i}
+              segment={segment}
+              onSubmit={onSubmitAnswers || (() => {})}
+            />
           );
         }
         return <ToolCallsBlock key={i} segment={segment} />;

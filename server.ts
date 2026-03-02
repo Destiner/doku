@@ -40,7 +40,19 @@ interface ToolCallsSegment {
   summary: string;
 }
 
-type MessageSegment = TextSegment | ToolCallsSegment;
+interface AskUserQuestionSegment {
+  type: "askUser";
+  questions: Array<{
+    question: string;
+    header: string;
+    options: Array<{ label: string; description: string }>;
+    multiSelect: boolean;
+  }>;
+  answered: boolean;
+  answers?: Record<string, string>;
+}
+
+type MessageSegment = TextSegment | ToolCallsSegment | AskUserQuestionSegment;
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -48,6 +60,13 @@ interface ChatMessage {
 }
 
 const activeProcesses = new Map<string, import("bun").Subprocess>();
+const pendingQuestions = new Map<
+  string,
+  {
+    resolve: (answers: Record<string, string> | null) => void;
+    questions: AskUserQuestionSegment["questions"];
+  }
+>();
 
 const isDev = process.env.NODE_ENV === "development";
 const PORT = parseInt(process.env.DOKU_PORT || (isDev ? "39483" : "0"), 10);
@@ -106,6 +125,7 @@ function parseChatHistory(sessionId: string): ChatMessage[] {
   const lines = raw.split("\n");
 
   const messages: ChatMessage[] = [];
+  const pendingAskUserSegments = new Map<string, AskUserQuestionSegment>();
 
   // Current assistant turn accumulator — merges consecutive assistant entries
   let currentAssistant: {
@@ -148,6 +168,30 @@ function parseChatHistory(sessionId: string): ChatMessage[] {
           role: "user",
           segments: [{ type: "text", content: msg.content }],
         });
+      } else if (msg && Array.isArray(msg.content)) {
+        // Tool results — check for AskUserQuestion answers
+        for (const block of msg.content as Array<{
+          type: string;
+          tool_use_id?: string;
+          content?: string;
+        }>) {
+          if (
+            block.type === "tool_result" &&
+            block.tool_use_id &&
+            pendingAskUserSegments.has(block.tool_use_id)
+          ) {
+            const seg = pendingAskUserSegments.get(block.tool_use_id)!;
+            try {
+              const result = JSON.parse(block.content || "{}");
+              if (result.answers) {
+                seg.answers = result.answers;
+              }
+            } catch {
+              // ignore parse errors
+            }
+            pendingAskUserSegments.delete(block.tool_use_id);
+          }
+        }
       }
       continue;
     }
@@ -158,6 +202,7 @@ function parseChatHistory(sessionId: string): ChatMessage[] {
           type: string;
           text?: string;
           name?: string;
+          id?: string;
           input?: Record<string, unknown>;
         }>;
       };
@@ -185,6 +230,32 @@ function parseChatHistory(sessionId: string): ChatMessage[] {
             currentAssistant.toolCalls = [];
           }
           currentAssistant.segments.push({ type: "text", content: block.text });
+        }
+
+        if (block.type === "tool_use" && block.name === "AskUserQuestion") {
+          // Flush pending tool calls before adding askUser segment
+          if (currentAssistant.toolCalls.length > 0) {
+            currentAssistant.segments.push({
+              type: "toolCalls",
+              calls: [...currentAssistant.toolCalls],
+              collapsed: true,
+              summary: generateToolSummary(currentAssistant.toolCalls),
+            });
+            currentAssistant.toolCalls = [];
+          }
+          const input = (block.input || {}) as {
+            questions?: AskUserQuestionSegment["questions"];
+          };
+          const seg: AskUserQuestionSegment = {
+            type: "askUser",
+            questions: input.questions || [],
+            answered: true,
+          };
+          currentAssistant.segments.push(seg);
+          if (block.id) {
+            pendingAskUserSegments.set(block.id, seg);
+          }
+          continue;
         }
 
         if (block.type === "tool_use" && block.name) {
@@ -339,12 +410,32 @@ const server = Bun.serve({
     if (pathname === "/api/chat/abort" && req.method === "POST") {
       const body = await req.json();
       const { docId: abortDocId } = body as { docId: string };
+      const pending = pendingQuestions.get(abortDocId);
+      if (pending) {
+        pending.resolve(null);
+        pendingQuestions.delete(abortDocId);
+      }
       const proc = activeProcesses.get(abortDocId);
       if (proc) {
         proc.kill("SIGTERM");
         activeProcesses.delete(abortDocId);
         console.log(`[chat] aborted process for doc: ${abortDocId}`);
       }
+      return jsonResponse({ ok: true });
+    }
+
+    // --- POST /api/chat/answer ---
+    if (pathname === "/api/chat/answer" && req.method === "POST") {
+      const body = await req.json();
+      const { docId: answerDocId, answers } = body as {
+        docId: string;
+        answers: Record<string, string>;
+      };
+      const pending = pendingQuestions.get(answerDocId);
+      if (!pending) {
+        return jsonResponse({ error: "No pending question" }, 404);
+      }
+      pending.resolve(answers);
       return jsonResponse({ ok: true });
     }
 
@@ -374,6 +465,8 @@ const server = Bun.serve({
         "-p",
         "--output-format",
         "stream-json",
+        "--input-format",
+        "stream-json",
         "--verbose",
         "--dangerously-skip-permissions",
         "--disallowed-tools",
@@ -400,6 +493,7 @@ const server = Bun.serve({
         cmd,
         stdout: "pipe",
         stderr: "pipe",
+        stdin: "pipe",
         env,
         cwd: PROJECT_CWD,
       });
@@ -480,6 +574,116 @@ const server = Bun.serve({
             })();
           }
 
+          // AskUserQuestion detection state
+          let serverToolName: string | null = null;
+          let serverToolId: string | null = null;
+          let serverToolInput = "";
+
+          function captureSession(event: Record<string, unknown>) {
+            if (event.session_id && !sessionCaptured) {
+              sessionCaptured = true;
+              const updatedMeta = getMetadata(projectDir);
+              if (updatedMeta.docs[docId]) {
+                updatedMeta.docs[docId].sessionId = event.session_id as string;
+                updatedMeta.docs[docId].updatedAt = new Date().toISOString();
+                setMetadata(projectDir, updatedMeta);
+              }
+              console.log(
+                `[chat] captured session_id: ${event.session_id} for doc: ${docId}`,
+              );
+            }
+          }
+
+          async function processEvent(event: Record<string, unknown>) {
+            if (event.type === "error") console.error(`[chat] error:`, event);
+
+            captureSession(event);
+
+            // Track tool_use blocks to detect AskUserQuestion
+            if (
+              event.type === "content_block_start" &&
+              (event.content_block as Record<string, unknown>)?.type ===
+                "tool_use"
+            ) {
+              const cb = event.content_block as Record<string, unknown>;
+              serverToolName = (cb.name as string) || null;
+              serverToolId = (cb.id as string) || null;
+              serverToolInput = "";
+              if (serverToolName === "AskUserQuestion") {
+                return; // suppress
+              }
+            }
+
+            if (
+              event.type === "content_block_delta" &&
+              (event.delta as Record<string, unknown>)?.type ===
+                "input_json_delta" &&
+              serverToolName === "AskUserQuestion"
+            ) {
+              serverToolInput +=
+                ((event.delta as Record<string, unknown>)
+                  ?.partial_json as string) || "";
+              return; // suppress
+            }
+
+            if (event.type === "content_block_stop" && serverToolName) {
+              if (serverToolName === "AskUserQuestion") {
+                const toolId = serverToolId;
+                let params: { questions?: AskUserQuestionSegment["questions"] };
+                try {
+                  params = JSON.parse(serverToolInput);
+                } catch {
+                  params = {};
+                }
+
+                // Send ask_user event to frontend
+                enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ type: "ask_user", questions: params.questions || [] })}\n\n`,
+                  ),
+                );
+
+                // Wait for user's answers
+                const answers = await new Promise<Record<
+                  string,
+                  string
+                > | null>((resolve) => {
+                  pendingQuestions.set(docId, {
+                    resolve,
+                    questions: params.questions || [],
+                  });
+                });
+                pendingQuestions.delete(docId);
+
+                if (answers && toolId) {
+                  // Write tool result to Claude's stdin
+                  const toolResult = JSON.stringify({
+                    type: "tool_result",
+                    tool_use_id: toolId,
+                    content: JSON.stringify({ answers }),
+                  });
+                  proc.stdin.write(toolResult + "\n");
+                  proc.stdin.flush();
+                  console.log(
+                    `[chat] sent AskUserQuestion result for doc: ${docId}`,
+                  );
+                }
+
+                serverToolName = null;
+                serverToolId = null;
+                serverToolInput = "";
+                return; // don't forward
+              }
+
+              // Reset state for non-AskUserQuestion tools
+              serverToolName = null;
+              serverToolId = null;
+              serverToolInput = "";
+            }
+
+            enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+          }
+
           const keepalive = setInterval(() => {
             enqueue(encoder.encode(": keepalive\n\n"));
           }, 15_000);
@@ -497,24 +701,7 @@ const server = Bun.serve({
                 if (!line.trim()) continue;
                 try {
                   const event = JSON.parse(line);
-                  if (event.type === "error")
-                    console.error(`[chat] error:`, event);
-
-                  if (event.session_id && !sessionCaptured) {
-                    sessionCaptured = true;
-                    const updatedMeta = getMetadata(projectDir);
-                    if (updatedMeta.docs[docId]) {
-                      updatedMeta.docs[docId].sessionId = event.session_id;
-                      updatedMeta.docs[docId].updatedAt =
-                        new Date().toISOString();
-                      setMetadata(projectDir, updatedMeta);
-                    }
-                    console.log(
-                      `[chat] captured session_id: ${event.session_id} for doc: ${docId}`,
-                    );
-                  }
-
-                  enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+                  await processEvent(event);
                 } catch {
                   // skip non-json lines
                 }
@@ -524,24 +711,7 @@ const server = Bun.serve({
             if (buffer.trim()) {
               try {
                 const event = JSON.parse(buffer);
-                if (event.type === "error")
-                  console.error(`[chat] error:`, event);
-
-                if (event.session_id && !sessionCaptured) {
-                  sessionCaptured = true;
-                  const updatedMeta = getMetadata(projectDir);
-                  if (updatedMeta.docs[docId]) {
-                    updatedMeta.docs[docId].sessionId = event.session_id;
-                    updatedMeta.docs[docId].updatedAt =
-                      new Date().toISOString();
-                    setMetadata(projectDir, updatedMeta);
-                  }
-                  console.log(
-                    `[chat] captured session_id: ${event.session_id} for doc: ${docId}`,
-                  );
-                }
-
-                enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+                await processEvent(event);
               } catch {
                 // skip non-json trailing
               }

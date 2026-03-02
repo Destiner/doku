@@ -10,10 +10,7 @@ interface Props {
   onTitleUpdate?: (docId: string, title: string) => void;
 }
 
-function detectAtQuery(
-  text: string,
-  cursorPos: number,
-): string | null {
+function detectAtQuery(text: string, cursorPos: number): string | null {
   const before = text.slice(0, cursorPos);
   const atIdx = before.lastIndexOf("@");
   if (atIdx === -1) return null;
@@ -28,6 +25,7 @@ export function ChatPanel({ docId, onTitleUpdate }: Props) {
     isStreaming,
     sendMessage,
     abortMessage,
+    submitAnswers,
     queueMessage,
     removeQueuedMessage,
     messageQueue,
@@ -136,16 +134,22 @@ export function ChatPanel({ docId, onTitleUpdate }: Props) {
     <div className={styles.panel}>
       <div className={styles.messages}>
         {messages.map((msg, i) => (
-          <ChatMessage
-            key={i}
-            message={msg}
-          />
+          <ChatMessage key={i} message={msg} onSubmitAnswers={submitAnswers} />
         ))}
         {isStreaming && (
           <div className={styles.workingIndicator}>
-            <span className={styles.workingDot} style={{ animationDelay: "0s" }} />
-            <span className={styles.workingDot} style={{ animationDelay: "0.15s" }} />
-            <span className={styles.workingDot} style={{ animationDelay: "0.3s" }} />
+            <span
+              className={styles.workingDot}
+              style={{ animationDelay: "0s" }}
+            />
+            <span
+              className={styles.workingDot}
+              style={{ animationDelay: "0.15s" }}
+            />
+            <span
+              className={styles.workingDot}
+              style={{ animationDelay: "0.3s" }}
+            />
           </div>
         )}
         <div ref={sentinelRef} />
@@ -159,7 +163,8 @@ export function ChatPanel({ docId, onTitleUpdate }: Props) {
             <i
               className={`ph ph-caret-right ${styles.queueCaret} ${!queueCollapsed ? styles.queueCaretExpanded : ""}`}
             />
-            {messageQueue.length} queued message{messageQueue.length !== 1 ? "s" : ""}
+            {messageQueue.length} queued message
+            {messageQueue.length !== 1 ? "s" : ""}
           </div>
           {!queueCollapsed && (
             <div className={styles.queueList}>

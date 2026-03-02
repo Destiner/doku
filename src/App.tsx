@@ -5,9 +5,15 @@ import { ChatPanel } from "./components/ChatPanel";
 import styles from "./App.module.css";
 
 export function App() {
-  const { docs, activeDoc, setActiveDoc, createDoc, deleteDoc, updateDocTitle } = useDocs();
+  const {
+    docs,
+    activeDoc,
+    setActiveDoc,
+    createDoc,
+    deleteDoc,
+    updateDocTitle,
+  } = useDocs();
   const [mode, setMode] = useState<"edit" | "view">("view");
-
   const toggleMode = useCallback(() => {
     setMode((m) => (m === "edit" ? "view" : "edit"));
   }, []);
@@ -16,7 +22,10 @@ export function App() {
     if (!activeDoc) return;
     const textPromise = fetch(`/api/doc/${encodeURIComponent(activeDoc)}/path`)
       .then((res) => res.json())
-      .then(({ path }: { path: string }) => new Blob([path], { type: "text/plain" }));
+      .then(
+        ({ path }: { path: string }) =>
+          new Blob([path], { type: "text/plain" }),
+      );
     navigator.clipboard
       .write([new ClipboardItem({ "text/plain": textPromise })])
       .catch((err) => console.error("Failed to copy path:", err));
@@ -29,9 +38,13 @@ export function App() {
         <button
           className={`${styles.modeToggle} ${mode === "view" ? styles.modeToggleActive : ""}`}
           onClick={toggleMode}
-          title={mode === "edit" ? "Switch to view mode" : "Switch to edit mode"}
+          title={
+            mode === "edit" ? "Switch to view mode" : "Switch to edit mode"
+          }
         >
-          <i className={mode === "edit" ? "ph ph-eye" : "ph ph-pencil-simple"} />
+          <i
+            className={mode === "edit" ? "ph ph-eye" : "ph ph-pencil-simple"}
+          />
         </button>
         <div className={styles.docSwitcher}>
           <select

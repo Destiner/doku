@@ -42,9 +42,7 @@ export function describeToolCall(
         detail: params.pattern ? truncate(params.pattern as string, 60) : "",
       };
     case "Grep": {
-      const pat = params.pattern
-        ? truncate(params.pattern as string, 40)
-        : "";
+      const pat = params.pattern ? truncate(params.pattern as string, 40) : "";
       const inPath = params.path
         ? ` in ${basename(params.path as string)}`
         : "";
@@ -63,6 +61,14 @@ export function describeToolCall(
           ? truncate(params.description as string, 60)
           : "",
       };
+    case "AskUserQuestion": {
+      const qs = params.questions as Array<{ question: string }> | undefined;
+      const count = qs?.length ?? 0;
+      return {
+        label: "Ask user",
+        detail: count === 1 ? "1 question" : `${count} questions`,
+      };
+    }
     case "TodoWrite":
       return { label: "Update tasks", detail: "" };
     default:
@@ -92,6 +98,7 @@ export function generateToolSummary(
     Search: (n) => `searched for ${n} pattern${n > 1 ? "s" : ""}`,
     WebFetch: (n) => `fetched ${n} URL${n > 1 ? "s" : ""}`,
     Task: (n) => `ran ${n} agent${n > 1 ? "s" : ""}`,
+    AskUserQuestion: (n) => `asked ${n} question${n > 1 ? "s" : ""}`,
     TodoWrite: () => "updated tasks",
   };
 
@@ -99,9 +106,7 @@ export function generateToolSummary(
   for (const [name, count] of Object.entries(counts)) {
     const fn = verbMap[name];
     parts.push(
-      fn
-        ? fn(count)
-        : `used ${name} ${count} time${count > 1 ? "s" : ""}`,
+      fn ? fn(count) : `used ${name} ${count} time${count > 1 ? "s" : ""}`,
     );
   }
 
