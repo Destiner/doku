@@ -465,8 +465,6 @@ const server = Bun.serve({
         "-p",
         "--output-format",
         "stream-json",
-        "--input-format",
-        "stream-json",
         "--verbose",
         "--dangerously-skip-permissions",
         "--disallowed-tools",
@@ -493,7 +491,6 @@ const server = Bun.serve({
         cmd,
         stdout: "pipe",
         stderr: "pipe",
-        stdin: "pipe",
         env,
         cwd: PROJECT_CWD,
       });
@@ -643,7 +640,7 @@ const server = Bun.serve({
                   ),
                 );
 
-                // Wait for user's answers
+                // Wait for user's answers, then resume in a new process
                 const answers = await new Promise<Record<
                   string,
                   string
@@ -656,17 +653,89 @@ const server = Bun.serve({
                 pendingQuestions.delete(docId);
 
                 if (answers && toolId) {
-                  // Write tool result to Claude's stdin
-                  const toolResult = JSON.stringify({
-                    type: "tool_result",
-                    tool_use_id: toolId,
-                    content: JSON.stringify({ answers }),
-                  });
-                  proc.stdin.write(toolResult + "\n");
-                  proc.stdin.flush();
-                  console.log(
-                    `[chat] sent AskUserQuestion result for doc: ${docId}`,
-                  );
+                  // Wait for current process to exit
+                  await proc.exited;
+
+                  // Get the session ID for resuming
+                  const resumeMeta = getMetadata(projectDir);
+                  const resumeSessionId =
+                    resumeMeta.docs[docId]?.sessionId;
+                  if (!resumeSessionId) {
+                    console.error(
+                      `[chat] no session_id for AskUserQuestion resume`,
+                    );
+                  } else {
+                    // Spawn a new resumed process with the tool result
+                    const toolResult = JSON.stringify({
+                      tool_use_id: toolId,
+                      content: JSON.stringify({ answers }),
+                    });
+                    const resumeCmd = [
+                      "claude",
+                      "-p",
+                      "--output-format",
+                      "stream-json",
+                      "--verbose",
+                      "--dangerously-skip-permissions",
+                      "--disallowed-tools",
+                      "EnterPlanMode",
+                      "ExitPlanMode",
+                      "--resume",
+                      resumeSessionId,
+                      toolResult,
+                    ];
+
+                    const resumeProc = spawn({
+                      cmd: resumeCmd,
+                      stdout: "pipe",
+                      stderr: "pipe",
+                      env,
+                      cwd: PROJECT_CWD,
+                    });
+
+                    activeProcesses.set(docId, resumeProc);
+
+                    // Drain stderr
+                    (async () => {
+                      const r = resumeProc.stderr.getReader();
+                      const d = new TextDecoder();
+                      while (true) {
+                        const { done, value } = await r.read();
+                        if (done) break;
+                        console.error(`[claude stderr] ${d.decode(value)}`);
+                      }
+                    })();
+
+                    // Read resumed process stdout
+                    const resumeReader = resumeProc.stdout.getReader();
+                    const resumeDecoder = new TextDecoder();
+                    let resumeBuffer = "";
+                    while (true) {
+                      const { done, value } = await resumeReader.read();
+                      if (done) break;
+                      resumeBuffer += resumeDecoder.decode(value, {
+                        stream: true,
+                      });
+                      const rLines = resumeBuffer.split("\n");
+                      resumeBuffer = rLines.pop() || "";
+                      for (const rLine of rLines) {
+                        if (!rLine.trim()) continue;
+                        try {
+                          const rEvent = JSON.parse(rLine);
+                          captureSession(rEvent);
+                          await processEvent(rEvent);
+                        } catch {
+                          // skip
+                        }
+                      }
+                    }
+
+                    await resumeProc.exited;
+                    activeProcesses.delete(docId);
+                    console.log(
+                      `[chat] AskUserQuestion resume process exited`,
+                    );
+                  }
                 }
 
                 serverToolName = null;
