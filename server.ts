@@ -49,13 +49,6 @@ interface ChatMessage {
 }
 
 const activeProcesses = new Map<string, import("bun").Subprocess>();
-const pendingQuestions = new Map<
-  string,
-  {
-    resolve: (answers: Record<string, string> | null) => void;
-    questions: AskUserQuestionSegment["questions"];
-  }
->();
 
 const isDev = process.env.NODE_ENV === "development";
 const PORT = parseInt(process.env.DOKU_PORT || (isDev ? "39483" : "0"), 10);
@@ -402,32 +395,12 @@ const server = Bun.serve({
     if (pathname === "/api/chat/abort" && req.method === "POST") {
       const body = await req.json();
       const { docId: abortDocId } = body as { docId: string };
-      const pending = pendingQuestions.get(abortDocId);
-      if (pending) {
-        pending.resolve(null);
-        pendingQuestions.delete(abortDocId);
-      }
       const proc = activeProcesses.get(abortDocId);
       if (proc) {
         proc.kill("SIGTERM");
         activeProcesses.delete(abortDocId);
         console.log(`[chat] aborted process for doc: ${abortDocId}`);
       }
-      return jsonResponse({ ok: true });
-    }
-
-    // --- POST /api/chat/answer ---
-    if (pathname === "/api/chat/answer" && req.method === "POST") {
-      const body = await req.json();
-      const { docId: answerDocId, answers } = body as {
-        docId: string;
-        answers: Record<string, string>;
-      };
-      const pending = pendingQuestions.get(answerDocId);
-      if (!pending) {
-        return jsonResponse({ error: "No pending question" }, 404);
-      }
-      pending.resolve(answers);
       return jsonResponse({ ok: true });
     }
 
@@ -584,10 +557,15 @@ const server = Bun.serve({
             }
           }
 
-          async function processEvent(event: Record<string, unknown>) {
+          // When true, suppress all remaining events (after AskUserQuestion)
+          let suppressAfterAskUser = false;
+
+          function processEvent(event: Record<string, unknown>) {
             if (event.type === "error") console.error(`[chat] error:`, event);
 
             captureSession(event);
+
+            if (suppressAfterAskUser) return;
 
             // Track tool_use blocks to detect AskUserQuestion
             if (
@@ -618,123 +596,14 @@ const server = Bun.serve({
 
             if (event.type === "content_block_stop" && serverToolName) {
               if (serverToolName === "AskUserQuestion") {
-                const toolId = serverToolId;
-                let params: { questions?: AskUserQuestionSegment["questions"] };
-                try {
-                  params = JSON.parse(serverToolInput);
-                } catch {
-                  params = {};
-                }
-
-                // Send ask_user event to frontend
-                enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({ type: "ask_user", questions: params.questions || [] })}\n\n`,
-                  ),
-                );
-
-                // Wait for user's answers, then resume in a new process
-                const answers = await new Promise<Record<
-                  string,
-                  string
-                > | null>((resolve) => {
-                  pendingQuestions.set(docId, {
-                    resolve,
-                    questions: params.questions || [],
-                  });
-                });
-                pendingQuestions.delete(docId);
-
-                if (answers && toolId) {
-                  // Wait for current process to exit
-                  await proc.exited;
-
-                  // Get the session ID for resuming
-                  const resumeMeta = storage.getMetadata();
-                  const resumeSessionId =
-                    resumeMeta.docs[docId]?.sessionId;
-                  if (!resumeSessionId) {
-                    console.error(
-                      `[chat] no session_id for AskUserQuestion resume`,
-                    );
-                  } else {
-                    // Spawn a new resumed process with the tool result
-                    const toolResult = JSON.stringify({
-                      tool_use_id: toolId,
-                      content: JSON.stringify({ answers }),
-                    });
-                    const resumeCmd = [
-                      "claude",
-                      "-p",
-                      "--output-format",
-                      "stream-json",
-                      "--verbose",
-                      "--dangerously-skip-permissions",
-                      "--disallowed-tools",
-                      "EnterPlanMode",
-                      "ExitPlanMode",
-                      "--resume",
-                      resumeSessionId,
-                      toolResult,
-                    ];
-
-                    const resumeProc = spawn({
-                      cmd: resumeCmd,
-                      stdout: "pipe",
-                      stderr: "pipe",
-                      env,
-                      cwd: PROJECT_CWD,
-                    });
-
-                    activeProcesses.set(docId, resumeProc);
-
-                    // Drain stderr
-                    (async () => {
-                      const r = resumeProc.stderr.getReader();
-                      const d = new TextDecoder();
-                      while (true) {
-                        const { done, value } = await r.read();
-                        if (done) break;
-                        console.error(`[claude stderr] ${d.decode(value)}`);
-                      }
-                    })();
-
-                    // Read resumed process stdout
-                    const resumeReader = resumeProc.stdout.getReader();
-                    const resumeDecoder = new TextDecoder();
-                    let resumeBuffer = "";
-                    while (true) {
-                      const { done, value } = await resumeReader.read();
-                      if (done) break;
-                      resumeBuffer += resumeDecoder.decode(value, {
-                        stream: true,
-                      });
-                      const rLines = resumeBuffer.split("\n");
-                      resumeBuffer = rLines.pop() || "";
-                      for (const rLine of rLines) {
-                        if (!rLine.trim()) continue;
-                        try {
-                          const rEvent = JSON.parse(rLine);
-                          captureSession(rEvent);
-                          await processEvent(rEvent);
-                        } catch {
-                          // skip
-                        }
-                      }
-                    }
-
-                    await resumeProc.exited;
-                    activeProcesses.delete(docId);
-                    console.log(
-                      `[chat] AskUserQuestion resume process exited`,
-                    );
-                  }
-                }
-
+                // Suppress all further events from this process
+                // (the CLI will auto-deny the tool and Claude will respond
+                // about the denial — we don't want that shown to the user)
+                suppressAfterAskUser = true;
                 serverToolName = null;
                 serverToolId = null;
                 serverToolInput = "";
-                return; // don't forward
+                return;
               }
 
               // Reset state for non-AskUserQuestion tools

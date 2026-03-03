@@ -230,18 +230,24 @@ export function useChat(
               }
 
               if (event.type === "ask_user") {
-                const askEvent = event as unknown as {
-                  type: "ask_user";
-                  questions: AskUserQuestionSegment["questions"];
-                };
-                if (currentToolCallsSegment) {
-                  startNewTextSegment();
+                // Skip if there's already an unanswered askUser segment
+                const hasUnanswered = segments.some(
+                  (s) => s.type === "askUser" && !s.answered,
+                );
+                if (!hasUnanswered) {
+                  const askEvent = event as unknown as {
+                    type: "ask_user";
+                    questions: AskUserQuestionSegment["questions"];
+                  };
+                  if (currentToolCallsSegment) {
+                    startNewTextSegment();
+                  }
+                  segments.push({
+                    type: "askUser",
+                    questions: askEvent.questions,
+                    answered: false,
+                  });
                 }
-                segments.push({
-                  type: "askUser",
-                  questions: askEvent.questions,
-                  answered: false,
-                });
                 flush();
                 continue;
               }
@@ -286,12 +292,28 @@ export function useChat(
               if (event.type === "assistant" && event.message?.content) {
                 let addedTools = false;
                 for (const block of event.message.content) {
-                  if (block.type === "tool_use") {
+                  if (
+                    block.type === "tool_use" &&
+                    block.name === "AskUserQuestion"
+                  ) {
+                    const input = (block.input || {}) as {
+                      questions?: AskUserQuestionSegment["questions"];
+                    };
+                    if (currentToolCallsSegment) {
+                      startNewTextSegment();
+                    }
+                    segments.push({
+                      type: "askUser",
+                      questions: input.questions || [],
+                      answered: false,
+                    });
+                  } else if (block.type === "tool_use") {
                     addToolCall(block.name!, block.input || {}, block.id);
                     addedTools = true;
                   }
                 }
                 if (addedTools) flush();
+                flush();
               }
 
               const text = extractText(event);
@@ -410,33 +432,62 @@ export function useChat(
   }, [docId]);
 
   const submitAnswers = useCallback(
-    async (answers: Record<string, string>) => {
+    (answers: Record<string, string>) => {
       if (!docId) return;
-      await fetch("/api/chat/answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ docId, answers }),
-      });
+
+      let allAnswers: Record<string, string> | null = null;
 
       setMessages((prev) => {
         const updated = [...prev];
+        // Find the assistant message with unanswered askUser segments
         for (let i = updated.length - 1; i >= 0; i--) {
           const msg = updated[i];
           if (msg.role !== "assistant") continue;
-          for (let j = msg.segments.length - 1; j >= 0; j--) {
-            const seg = msg.segments[j];
+
+          const askUserSegs = msg.segments.filter(
+            (s) => s.type === "askUser",
+          ) as AskUserQuestionSegment[];
+          if (askUserSegs.length === 0) continue;
+
+          // Mark the first unanswered segment
+          const newSegments = [...msg.segments];
+          for (let j = 0; j < newSegments.length; j++) {
+            const seg = newSegments[j];
             if (seg.type === "askUser" && !seg.answered) {
-              const newSegments = [...msg.segments];
               newSegments[j] = { ...seg, answered: true, answers };
-              updated[i] = { ...msg, segments: newSegments };
-              return updated;
+              break;
             }
           }
+          updated[i] = { ...msg, segments: newSegments };
+
+          // Check if all askUser segments are now answered
+          const remaining = newSegments.filter(
+            (s) => s.type === "askUser" && !s.answered,
+          );
+          if (remaining.length === 0) {
+            // Collect all answers from all segments
+            allAnswers = {};
+            for (const seg of newSegments) {
+              if (seg.type === "askUser" && seg.answers) {
+                Object.assign(allAnswers, seg.answers);
+              }
+            }
+          }
+          return updated;
         }
         return updated;
       });
+
+      // Only send once all askUser segments are answered
+      if (allAnswers) {
+        const lines = Object.entries(allAnswers).map(
+          ([question, answer]) => `- ${question} ${answer}`,
+        );
+        const prompt = `Here are my answers to your questions:\n${lines.join("\n")}`;
+        sendMessage(prompt);
+      }
     },
-    [docId],
+    [docId, sendMessage],
   );
 
   return {
