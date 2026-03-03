@@ -12,7 +12,20 @@ export function MarkdownViewer({ content }: Props) {
   const { highlight } = useCodeHighlighter();
 
   const components: Components = {
-    pre: ({ children }) => <>{children}</>,
+    pre: ({ children, node, ...props }) => {
+      const codeChild = node?.children?.[0];
+      if (
+        codeChild?.type === "element" &&
+        codeChild.tagName === "code" &&
+        Array.isArray(codeChild.properties?.className) &&
+        codeChild.properties.className.some((c: string) =>
+          String(c).startsWith("language-"),
+        )
+      ) {
+        return <>{children}</>;
+      }
+      return <pre {...props}>{children}</pre>;
+    },
     code: ({ children, className, ...props }) => {
       const match = className?.match(/language-(\w+)/);
       if (match) {
