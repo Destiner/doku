@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "concurrently \"NODE_ENV=development bun run --watch server.ts\" \"bunx vite\"",
+    "dev:playground": "concurrently \"NODE_ENV=development DOKU_PLAYGROUND=1 bun run --watch server.ts\" \"bunx vite\"",
     "build": "bunx vite build",
     "start": "bun run server.ts",
     "pack": "bun run build && bun run scripts/pack.ts"

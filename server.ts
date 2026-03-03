@@ -1,25 +1,14 @@
 import { spawn } from "bun";
-import {
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  statSync,
-  unlinkSync,
-  readdirSync,
-} from "fs";
+import { existsSync, readFileSync, statSync, readdirSync } from "fs";
 import { join, resolve, extname, relative } from "path";
 import { homedir } from "os";
+import { encodeProjectPath } from "./storage";
 import {
-  getProjectDir,
+  type StorageProvider,
+  FileSystemStorage,
+  EphemeralStorage,
   generateDocId,
-  generateDocName,
-  getMetadata,
-  setMetadata,
-  getDocPath,
-  resolveDocName,
-  encodeProjectPath,
-  migrateMetadata,
-} from "./storage";
+} from "./storage-provider";
 import { describeToolCall, generateToolSummary } from "./src/utils/toolCalls";
 let embeddedAssetPaths: Record<string, string> = {};
 try {
@@ -74,9 +63,13 @@ const DIST_DIR = resolve("./dist");
 
 const HAS_EMBEDDED_ASSETS = Object.keys(embeddedAssetPaths).length > 0;
 
+const isPlayground =
+  process.argv.includes("--playground") ||
+  process.env.DOKU_PLAYGROUND === "1";
+
 const PROJECT_CWD = (() => {
-  const arg = process.argv[2];
-  return arg ? resolve(arg) : process.cwd();
+  const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+  return args[0] ? resolve(args[0]) : process.cwd();
 })();
 
 const MIME_TYPES: Record<string, string> = {
@@ -276,7 +269,9 @@ function parseChatHistory(sessionId: string): ChatMessage[] {
   return messages;
 }
 
-migrateMetadata(getProjectDir(PROJECT_CWD));
+const storage: StorageProvider = isPlayground
+  ? new EphemeralStorage()
+  : new FileSystemStorage(PROJECT_CWD);
 
 const server = Bun.serve({
   port: PORT,
@@ -322,8 +317,6 @@ const server = Bun.serve({
       }
     }
 
-    const projectDir = getProjectDir(PROJECT_CWD);
-
     // --- GET /api/files ---
     if (pathname === "/api/files" && req.method === "GET") {
       const q = (url.searchParams.get("q") || "").toLowerCase();
@@ -366,7 +359,7 @@ const server = Bun.serve({
 
     // --- GET /api/docs ---
     if (pathname === "/api/docs" && req.method === "GET") {
-      const meta = getMetadata(projectDir);
+      const meta = storage.getMetadata();
       const docs = Object.entries(meta.docs).map(([id, doc]) => ({
         id,
         name: doc.name,
@@ -380,19 +373,18 @@ const server = Bun.serve({
     // --- POST /api/docs ---
     if (pathname === "/api/docs" && req.method === "POST") {
       const id = generateDocId();
-      const name = generateDocName(projectDir);
-      const docPath = getDocPath(projectDir, name);
-      writeFileSync(docPath, "", "utf-8");
+      const name = storage.generateDocName();
+      storage.setDocContent(name, "");
       const now = new Date().toISOString();
-      const meta = getMetadata(projectDir);
+      const meta = storage.getMetadata();
       meta.docs[id] = { name, createdAt: now, updatedAt: now };
-      setMetadata(projectDir, meta);
+      storage.setMetadata(meta);
       return jsonResponse({ id, name });
     }
 
     // --- GET /api/last-opened ---
     if (pathname === "/api/last-opened" && req.method === "GET") {
-      const meta = getMetadata(projectDir);
+      const meta = storage.getMetadata();
       return jsonResponse({ docId: meta.lastOpenedDoc || null });
     }
 
@@ -400,9 +392,9 @@ const server = Bun.serve({
     if (pathname === "/api/last-opened" && req.method === "PUT") {
       const body = await req.json();
       const { docId } = body as { docId: string };
-      const meta = getMetadata(projectDir);
+      const meta = storage.getMetadata();
       meta.lastOpenedDoc = docId;
-      setMetadata(projectDir, meta);
+      storage.setMetadata(meta);
       return jsonResponse({ ok: true });
     }
 
@@ -443,17 +435,18 @@ const server = Bun.serve({
     if (pathname === "/api/chat" && req.method === "POST") {
       const body = await req.json();
       const { prompt, docId } = body as { prompt: string; docId: string };
-      const meta = getMetadata(projectDir);
+      const meta = storage.getMetadata();
       const docMeta = meta.docs[docId];
 
       if (!docMeta) {
         return jsonResponse({ error: "Document not found" }, 404);
       }
 
-      const docPath = getDocPath(projectDir, docMeta.name);
-      if (!existsSync(docPath)) {
+      if (!storage.docExists(docMeta.name)) {
         return jsonResponse({ error: "Document file not found" }, 404);
       }
+
+      const docPath = storage.getDocFilePath(docMeta.name);
 
       const currentSessionId = docMeta.sessionId || null;
 
@@ -551,10 +544,10 @@ const server = Bun.serve({
                 const output = await new Response(titleProc.stdout).text();
                 const title = output.trim();
                 if (title && title.length > 0 && title.length < 200) {
-                  const titleMeta = getMetadata(projectDir);
+                  const titleMeta = storage.getMetadata();
                   if (titleMeta.docs[docId]) {
                     titleMeta.docs[docId].title = title;
-                    setMetadata(projectDir, titleMeta);
+                    storage.setMetadata(titleMeta);
                   }
                   enqueue(
                     encoder.encode(
@@ -579,11 +572,11 @@ const server = Bun.serve({
           function captureSession(event: Record<string, unknown>) {
             if (event.session_id && !sessionCaptured) {
               sessionCaptured = true;
-              const updatedMeta = getMetadata(projectDir);
+              const updatedMeta = storage.getMetadata();
               if (updatedMeta.docs[docId]) {
                 updatedMeta.docs[docId].sessionId = event.session_id as string;
                 updatedMeta.docs[docId].updatedAt = new Date().toISOString();
-                setMetadata(projectDir, updatedMeta);
+                storage.setMetadata(updatedMeta);
               }
               console.log(
                 `[chat] captured session_id: ${event.session_id} for doc: ${docId}`,
@@ -657,7 +650,7 @@ const server = Bun.serve({
                   await proc.exited;
 
                   // Get the session ID for resuming
-                  const resumeMeta = getMetadata(projectDir);
+                  const resumeMeta = storage.getMetadata();
                   const resumeSessionId =
                     resumeMeta.docs[docId]?.sessionId;
                   if (!resumeSessionId) {
@@ -821,19 +814,17 @@ const server = Bun.serve({
     const watchMatch = pathname.match(/^\/api\/doc\/([^/]+)\/watch$/);
     if (watchMatch && req.method === "GET") {
       const docId = decodeURIComponent(watchMatch[1]);
-      const meta = getMetadata(projectDir);
-      const docName = resolveDocName(meta, docId);
+      const docName = storage.resolveDocName(docId);
 
       if (!docName) {
         return jsonResponse({ error: "Document not found" }, 404);
       }
 
-      const docPath = getDocPath(projectDir, docName);
-      if (!existsSync(docPath)) {
+      if (!storage.docExists(docName)) {
         return jsonResponse({ error: "Document file not found" }, 404);
       }
 
-      let lastMtime = statSync(docPath).mtimeMs;
+      let lastMtime = storage.getDocMtime(docName) ?? 0;
       let closed = false;
 
       const stream = new ReadableStream({
@@ -846,13 +837,17 @@ const server = Bun.serve({
               return;
             }
             try {
-              const stat = statSync(docPath);
-              if (stat.mtimeMs > lastMtime) {
-                lastMtime = stat.mtimeMs;
-                const content = readFileSync(docPath, "utf-8");
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
-                );
+              const mtime = storage.getDocMtime(docName);
+              if (mtime && mtime > lastMtime) {
+                lastMtime = mtime;
+                const content = storage.getDocContent(docName);
+                if (content !== null) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({ content })}\n\n`,
+                    ),
+                  );
+                }
               }
             } catch {
               // file may be temporarily unavailable
@@ -892,22 +887,20 @@ const server = Bun.serve({
     const pathMatch = pathname.match(/^\/api\/doc\/([^/]+)\/path$/);
     if (pathMatch && req.method === "GET") {
       const docId = decodeURIComponent(pathMatch[1]);
-      const meta = getMetadata(projectDir);
-      const docName = resolveDocName(meta, docId);
+      const docName = storage.resolveDocName(docId);
 
       if (!docName) {
         return jsonResponse({ error: "Document not found" }, 404);
       }
 
-      const docPath = getDocPath(projectDir, docName);
-      return jsonResponse({ path: docPath });
+      return jsonResponse({ path: storage.getDocFilePath(docName) });
     }
 
     // Match /api/chat/:id/history
     const historyMatch = pathname.match(/^\/api\/chat\/([^/]+)\/history$/);
     if (historyMatch && req.method === "GET") {
       const docId = decodeURIComponent(historyMatch[1]);
-      const meta = getMetadata(projectDir);
+      const meta = storage.getMetadata();
       const sessionId = meta.docs[docId]?.sessionId;
 
       if (!sessionId) {
@@ -922,72 +915,64 @@ const server = Bun.serve({
     const docMatch = pathname.match(/^\/api\/doc\/([^/]+)$/);
     if (docMatch) {
       const docId = decodeURIComponent(docMatch[1]);
-      const meta = getMetadata(projectDir);
-      const docName = resolveDocName(meta, docId);
+      const docName = storage.resolveDocName(docId);
 
       if (!docName) {
         return jsonResponse({ error: "Document not found" }, 404);
       }
 
-      const docPath = getDocPath(projectDir, docName);
-
       // GET /api/doc/:id
       if (req.method === "GET") {
-        if (!existsSync(docPath)) {
+        const content = storage.getDocContent(docName);
+        if (content === null) {
           return jsonResponse({ error: "Document file not found" }, 404);
         }
-        const content = readFileSync(docPath, "utf-8");
         return jsonResponse({ content });
       }
 
       // PUT /api/doc/:id
       if (req.method === "PUT") {
-        if (!existsSync(docPath)) {
+        if (!storage.docExists(docName)) {
           return jsonResponse({ error: "Document file not found" }, 404);
         }
         const body = await req.json();
         const { content } = body as { content: string };
-        writeFileSync(docPath, content, "utf-8");
-        const putMeta = getMetadata(projectDir);
+        storage.setDocContent(docName, content);
+        const putMeta = storage.getMetadata();
         if (putMeta.docs[docId]) {
           putMeta.docs[docId].updatedAt = new Date().toISOString();
-          setMetadata(projectDir, putMeta);
+          storage.setMetadata(putMeta);
         }
         return jsonResponse({ ok: true });
       }
 
       // DELETE /api/doc/:id?ifEmpty
       if (req.method === "DELETE" && url.searchParams.has("ifEmpty")) {
-        const content = existsSync(docPath)
-          ? readFileSync(docPath, "utf-8")
-          : "";
+        const content = storage.getDocContent(docName) ?? "";
+        const meta = storage.getMetadata();
         const hasSession = !!meta.docs[docId]?.sessionId;
         if (content.trim() !== "" || hasSession) {
           return jsonResponse({ deleted: false });
         }
-        if (existsSync(docPath)) {
-          unlinkSync(docPath);
-        }
-        const freshMeta = getMetadata(projectDir);
+        storage.deleteDoc(docName);
+        const freshMeta = storage.getMetadata();
         delete freshMeta.docs[docId];
         if (freshMeta.lastOpenedDoc === docId) {
           delete freshMeta.lastOpenedDoc;
         }
-        setMetadata(projectDir, freshMeta);
+        storage.setMetadata(freshMeta);
         return jsonResponse({ deleted: true });
       }
 
       // DELETE /api/doc/:id
       if (req.method === "DELETE") {
-        if (existsSync(docPath)) {
-          unlinkSync(docPath);
-        }
-        const freshMeta = getMetadata(projectDir);
+        storage.deleteDoc(docName);
+        const freshMeta = storage.getMetadata();
         delete freshMeta.docs[docId];
         if (freshMeta.lastOpenedDoc === docId) {
           delete freshMeta.lastOpenedDoc;
         }
-        setMetadata(projectDir, freshMeta);
+        storage.setMetadata(freshMeta);
         return jsonResponse({ ok: true });
       }
     }
@@ -1015,8 +1000,22 @@ const server = Bun.serve({
 });
 
 const serverUrl = `http://localhost:${server.port}`;
-console.log(`Doku running at ${serverUrl}`);
-console.log(`Project dir: ${getProjectDir(PROJECT_CWD)}`);
+console.log(
+  `Doku running at ${serverUrl}${isPlayground ? " (playground mode)" : ""}`,
+);
+
+function cleanup() {
+  storage.dispose();
+}
+process.on("exit", cleanup);
+process.on("SIGINT", () => {
+  cleanup();
+  process.exit(0);
+});
+process.on("SIGTERM", () => {
+  cleanup();
+  process.exit(0);
+});
 
 if (HAS_EMBEDDED_ASSETS) {
   if (process.platform === "darwin") {
