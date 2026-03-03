@@ -64,44 +64,65 @@ export function useDoc(docId: string | null) {
   useEffect(() => {
     if (!docId) return;
 
+    let disposed = false;
+
+    function applyUpdate(newContent: string) {
+      if (newContent === lastSavedContent.current) return;
+      if (saveTimeout.current || savingRef.current) return;
+
+      lastSavedContent.current = newContent;
+      setContent(newContent);
+
+      const el = textareaRef.current;
+      if (el && newContent !== el.value) {
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        el.value = newContent;
+        el.setSelectionRange(start, end);
+      }
+    }
+
+    // SSE for low-latency updates
+    let currentEvt: EventSource | null = null;
     function connect() {
+      if (disposed) return;
       const evtSource = new EventSource(
         `/api/doc/${encodeURIComponent(docId!)}/watch`,
       );
+      currentEvt = evtSource;
       evtSource.onmessage = (e) => {
         try {
           const { content } = JSON.parse(e.data);
-          const el = textareaRef.current;
-          if (!el) return;
-
-          // Our own save echoing back via the file watcher — skip
-          if (content === lastSavedContent.current) return;
-
-          // User has pending unsaved changes or a save is in-flight — skip
-          // to avoid overwriting their work with stale content
-          if (saveTimeout.current || savingRef.current) return;
-
-          if (content !== el.value) {
-            const start = el.selectionStart;
-            const end = el.selectionEnd;
-            el.value = content;
-            lastSavedContent.current = content;
-            setContent(content);
-            el.setSelectionRange(start, end);
-          }
+          applyUpdate(content);
         } catch (err) {
           console.error("Failed to parse watch event:", err);
         }
       };
       evtSource.onerror = () => {
         evtSource.close();
-        setTimeout(connect, 2000);
+        if (!disposed) setTimeout(connect, 2000);
       };
-      return evtSource;
     }
+    connect();
 
-    const evtSource = connect();
-    return () => evtSource.close();
+    // Polling fallback — catches updates if SSE is buffered by proxy
+    const poll = setInterval(async () => {
+      if (disposed || saveTimeout.current || savingRef.current) return;
+      try {
+        const res = await fetch(`/api/doc/${encodeURIComponent(docId!)}`);
+        if (!res.ok || disposed) return;
+        const { content } = await res.json();
+        applyUpdate(content);
+      } catch {
+        // ignore
+      }
+    }, 2000);
+
+    return () => {
+      disposed = true;
+      currentEvt?.close();
+      clearInterval(poll);
+    };
   }, [docId]);
 
   return { textareaRef, handleInput, content };

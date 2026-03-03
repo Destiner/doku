@@ -18,6 +18,19 @@ function ToolCallsBlock({
   segment: Extract<MessageSegment, { type: "toolCalls" }>;
 }) {
   const [collapsed, setCollapsed] = useState(segment.collapsed);
+  const isSingle = segment.calls.length === 1;
+
+  if (isSingle) {
+    const call = segment.calls[0];
+    return (
+      <div className={styles.toolCallsWrapper}>
+        <div className={styles.toolCall}>
+          <strong>{call.label}</strong>
+          {call.detail ? ` ${call.detail}` : ""}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.toolCallsWrapper}>

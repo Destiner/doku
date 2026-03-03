@@ -16,6 +16,8 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: `http://localhost:${process.env.DOKU_PORT || 39483}`,
+        timeout: 0,
+        proxyTimeout: 0,
         configure: (proxy) => {
           proxy.on("error", () => {});
         },

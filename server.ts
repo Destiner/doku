@@ -49,6 +49,7 @@ interface ChatMessage {
 }
 
 const activeProcesses = new Map<string, import("bun").Subprocess>();
+const capturedSessions = new Map<string, string>();
 
 const isDev = process.env.NODE_ENV === "development";
 const PORT = parseInt(process.env.DOKU_PORT || (isDev ? "39483" : "0"), 10);
@@ -57,8 +58,7 @@ const DIST_DIR = resolve("./dist");
 const HAS_EMBEDDED_ASSETS = Object.keys(embeddedAssetPaths).length > 0;
 
 const isPlayground =
-  process.argv.includes("--playground") ||
-  process.env.DOKU_PLAYGROUND === "1";
+  process.argv.includes("--playground") || process.env.DOKU_PLAYGROUND === "1";
 
 const PROJECT_CWD = (() => {
   const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
@@ -545,6 +545,7 @@ const server = Bun.serve({
           function captureSession(event: Record<string, unknown>) {
             if (event.session_id && !sessionCaptured) {
               sessionCaptured = true;
+              capturedSessions.set(docId, event.session_id as string);
               const updatedMeta = storage.getMetadata();
               if (updatedMeta.docs[docId]) {
                 updatedMeta.docs[docId].sessionId = event.session_id as string;
@@ -712,9 +713,7 @@ const server = Bun.serve({
                 const content = storage.getDocContent(docName);
                 if (content !== null) {
                   controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({ content })}\n\n`,
-                    ),
+                    encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
                   );
                 }
               }
@@ -770,7 +769,8 @@ const server = Bun.serve({
     if (historyMatch && req.method === "GET") {
       const docId = decodeURIComponent(historyMatch[1]);
       const meta = storage.getMetadata();
-      const sessionId = meta.docs[docId]?.sessionId;
+      const sessionId =
+        meta.docs[docId]?.sessionId || capturedSessions.get(docId);
 
       if (!sessionId) {
         return jsonResponse({ messages: [] });
