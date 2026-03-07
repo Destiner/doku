@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import { DocEntry } from "../hooks/useDocs";
+import { relativeTime } from "../utils/time";
 import styles from "./EmptyState.module.css";
 
 interface Props {
@@ -69,7 +70,10 @@ export function EmptyState({ onSubmit, recentDocs, onNavigateToDoc }: Props) {
                 className={styles.recentItem}
                 onClick={() => onNavigateToDoc(doc.id)}
               >
-                {doc.title || doc.name}
+                <span>{doc.title || doc.name}</span>
+                <span className={styles.recentTime}>
+                  {relativeTime(new Date(doc.updatedAt))}
+                </span>
               </button>
             ))}
           </div>
