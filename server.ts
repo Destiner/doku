@@ -12,6 +12,7 @@ import {
 import { describeToolCall, generateToolSummary } from "./src/utils/toolCalls";
 let embeddedAssetPaths: Record<string, string> = {};
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   embeddedAssetPaths = require("./_assets.gen").assets;
 } catch {
   // Dev mode: _assets.gen.ts may reference stale/missing dist files
@@ -548,8 +549,6 @@ const server = Bun.serve({
 
           // AskUserQuestion detection state
           let serverToolName: string | null = null;
-          let serverToolId: string | null = null;
-          let serverToolInput = "";
 
           function captureSession(event: Record<string, unknown>) {
             if (event.session_id && !sessionCaptured) {
@@ -597,8 +596,6 @@ const server = Bun.serve({
             ) {
               const cb = event.content_block as Record<string, unknown>;
               serverToolName = (cb.name as string) || null;
-              serverToolId = (cb.id as string) || null;
-              serverToolInput = "";
               if (serverToolName === "AskUserQuestion") {
                 return; // suppress
               }
@@ -610,9 +607,6 @@ const server = Bun.serve({
                 "input_json_delta" &&
               serverToolName === "AskUserQuestion"
             ) {
-              serverToolInput +=
-                ((event.delta as Record<string, unknown>)
-                  ?.partial_json as string) || "";
               return; // suppress
             }
 
@@ -623,15 +617,11 @@ const server = Bun.serve({
                 // about the denial — we don't want that shown to the user)
                 suppressAfterAskUser = true;
                 serverToolName = null;
-                serverToolId = null;
-                serverToolInput = "";
                 return;
               }
 
               // Reset state for non-AskUserQuestion tools
               serverToolName = null;
-              serverToolId = null;
-              serverToolInput = "";
             }
 
             enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));

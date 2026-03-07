@@ -56,6 +56,7 @@ export function useCodeHighlighter() {
         return escapeHtml(code);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [ready],
   );
 

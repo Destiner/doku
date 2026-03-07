@@ -28,7 +28,7 @@ export function FileSelector({
         onActiveIndexChange(0);
       })
       .catch(() => onFilesChange([]));
-  }, [query]);
+  }, [query, onFilesChange, onActiveIndexChange]);
 
   useEffect(() => {
     const active = listRef.current?.children[activeIndex] as HTMLElement;

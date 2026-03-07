@@ -15,7 +15,9 @@ export function useDocs() {
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [activeDoc, setActiveDocState] = useState<string | null>(null);
   const activeDocRef = useRef<string | null>(null);
-  activeDocRef.current = activeDoc;
+  useEffect(() => {
+    activeDocRef.current = activeDoc;
+  }, [activeDoc]);
 
   const fetchDocs = useCallback(async () => {
     try {
