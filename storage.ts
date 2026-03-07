@@ -3,7 +3,6 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
-  statSync,
   writeFileSync,
 } from "fs";
 import { join } from "path";
@@ -455,36 +454,4 @@ export function listDocFiles(projectDir: string): string[] {
   return readdirSync(projectDir)
     .filter((f) => f.endsWith(".md"))
     .map((f) => f.replace(/\.md$/, ""));
-}
-
-export function migrateMetadata(projectDir: string): void {
-  const meta = getMetadata(projectDir);
-  let changed = false;
-
-  for (const [id, doc] of Object.entries(meta.docs)) {
-    // Migrate missing timestamps
-    if (!doc.createdAt || !doc.updatedAt) {
-      const docPath = getDocPath(projectDir, doc.name);
-      let createdAt: string;
-      let updatedAt: string;
-
-      if (existsSync(docPath)) {
-        const stat = statSync(docPath);
-        createdAt = stat.birthtime.toISOString();
-        updatedAt = stat.mtime.toISOString();
-      } else {
-        const now = new Date().toISOString();
-        createdAt = now;
-        updatedAt = now;
-      }
-
-      meta.docs[id] = { ...doc, createdAt, updatedAt };
-      changed = true;
-    }
-
-  }
-
-  if (changed) {
-    setMetadata(projectDir, meta);
-  }
 }

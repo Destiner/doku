@@ -17,7 +17,6 @@ import {
   getDocPath,
   getMetadata,
   getProjectDir,
-  migrateMetadata,
   resolveDocName,
   setMetadata,
 } from "./storage";
@@ -48,7 +47,6 @@ export class FileSystemStorage implements StorageProvider {
 
   constructor(cwd: string) {
     this.projectDir = getProjectDir(cwd);
-    migrateMetadata(this.projectDir);
   }
 
   getMetadata(): ProjectMeta {
