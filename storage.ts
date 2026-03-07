@@ -395,8 +395,11 @@ export function generateDocName(projectDir: string): string {
   return `doc-${Date.now()}`;
 }
 
+export type DocMode = "planning" | "research" | "general";
+
 export interface DocMeta {
   name: string;
+  mode: DocMode;
   sessionId?: string;
   title?: string;
   createdAt: string;

@@ -11,6 +11,39 @@
   padding: 0 24px;
 }
 
+.modeSelector {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.modeButton {
+  padding: 5px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #666;
+  cursor: pointer;
+}
+
+.modeButton:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.modeButtonActive {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+}
+
+.modeButtonActive:hover {
+  background: #333;
+  color: #fff;
+}
+
 .inputWrapper {
   position: relative;
 }

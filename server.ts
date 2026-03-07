@@ -356,6 +356,7 @@ const server = Bun.serve({
       const docs = Object.entries(meta.docs).map(([id, doc]) => ({
         id,
         name: doc.name,
+        mode: doc.mode,
         title: doc.title,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
@@ -365,14 +366,18 @@ const server = Bun.serve({
 
     // --- POST /api/docs ---
     if (pathname === "/api/docs" && req.method === "POST") {
+      const body = await req.json().catch(() => ({}));
+      const { mode: reqMode } = body as { mode?: string };
+      const docMode =
+        reqMode === "research" || reqMode === "general" ? reqMode : "planning";
       const id = generateDocId();
       const name = storage.generateDocName();
       storage.setDocContent(name, "");
       const now = new Date().toISOString();
       const meta = storage.getMetadata();
-      meta.docs[id] = { name, createdAt: now, updatedAt: now };
+      meta.docs[id] = { name, mode: docMode, createdAt: now, updatedAt: now };
       storage.setMetadata(meta);
-      return jsonResponse({ id, name });
+      return jsonResponse({ id, name, mode: docMode });
     }
 
     // --- GET /api/last-opened ---
@@ -441,10 +446,14 @@ const server = Bun.serve({
       if (currentSessionId) {
         cmd.push("--resume", currentSessionId);
       } else {
-        cmd.push(
-          "--append-system-prompt",
-          `You are used exclusively for planning. Your role is to help the user think through ideas, draft plans, and write specs—all by editing a shared document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nAlways write plans, research, and proposals directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.`,
-        );
+        const docModePrompts: Record<string, string> = {
+          planning: `You are used exclusively for planning. Your role is to help the user think through ideas, draft plans, and write specs—all by editing a shared document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nAlways write plans, research, and proposals directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.`,
+          research: `Your role is to investigate topics, synthesize findings, and write research reports by editing a shared document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nYou have web tools (WebSearch, WebFetch) available for internet research, but codebase research is equally valid—not all research requires the web.\nAlways write findings and analysis directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.`,
+          general: `Write to the document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nAlways write directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.`,
+        };
+        const systemPrompt =
+          docModePrompts[docMeta.mode] || docModePrompts.planning;
+        cmd.push("--append-system-prompt", systemPrompt);
       }
 
       cmd.push(prompt);
@@ -749,6 +758,28 @@ const server = Bun.serve({
       });
 
       return new Response(stream, { headers: sseHeaders() });
+    }
+
+    // Match /api/doc/:id/mode
+    const modeMatch = pathname.match(/^\/api\/doc\/([^/]+)\/mode$/);
+    if (modeMatch && req.method === "PUT") {
+      const docId = decodeURIComponent(modeMatch[1]);
+      const body = await req.json();
+      const { mode: newMode } = body as { mode: string };
+      if (
+        newMode !== "planning" &&
+        newMode !== "research" &&
+        newMode !== "general"
+      ) {
+        return jsonResponse({ error: "Invalid mode" }, 400);
+      }
+      const meta = storage.getMetadata();
+      if (!meta.docs[docId]) {
+        return jsonResponse({ error: "Document not found" }, 404);
+      }
+      meta.docs[docId].mode = newMode;
+      storage.setMetadata(meta);
+      return jsonResponse({ ok: true });
     }
 
     // Match /api/doc/:id/path

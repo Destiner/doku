@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
+export type DocMode = "planning" | "research" | "general";
+
 export interface DocEntry {
   id: string;
   name: string;
+  mode: DocMode;
   title?: string;
   createdAt: string;
   updatedAt: string;
@@ -51,20 +54,35 @@ export function useDocs() {
     }
   }, []);
 
-  const createDoc = useCallback(async () => {
-    try {
-      const res = await fetch("/api/docs", { method: "POST" });
-      const { id, name } = (await res.json()) as { id: string; name: string };
-      const now = new Date().toISOString();
-      setDocs((prev) => [
-        { id, name, createdAt: now, updatedAt: now },
-        ...prev,
-      ]);
-      setActiveDoc(id);
-    } catch (err) {
-      console.error("Failed to create doc:", err);
-    }
-  }, [setActiveDoc]);
+  const createDoc = useCallback(
+    async (mode?: DocMode) => {
+      try {
+        const res = await fetch("/api/docs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: mode || "planning" }),
+        });
+        const {
+          id,
+          name,
+          mode: docMode,
+        } = (await res.json()) as {
+          id: string;
+          name: string;
+          mode: DocMode;
+        };
+        const now = new Date().toISOString();
+        setDocs((prev) => [
+          { id, name, mode: docMode, createdAt: now, updatedAt: now },
+          ...prev,
+        ]);
+        setActiveDoc(id);
+      } catch (err) {
+        console.error("Failed to create doc:", err);
+      }
+    },
+    [setActiveDoc],
+  );
 
   const deleteDoc = useCallback(
     async (id: string) => {
@@ -89,11 +107,23 @@ export function useDocs() {
   useEffect(() => {
     async function init() {
       await fetchDocs();
-      const res = await fetch("/api/docs", { method: "POST" });
-      const { id, name } = (await res.json()) as { id: string; name: string };
+      const res = await fetch("/api/docs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "planning" }),
+      });
+      const {
+        id,
+        name,
+        mode: docMode,
+      } = (await res.json()) as {
+        id: string;
+        name: string;
+        mode: DocMode;
+      };
       const now = new Date().toISOString();
       setDocs((prev) => [
-        { id, name, createdAt: now, updatedAt: now },
+        { id, name, mode: docMode, createdAt: now, updatedAt: now },
         ...prev,
       ]);
       setActiveDocState(id);
@@ -105,6 +135,15 @@ export function useDocs() {
     setDocs((prev) => prev.map((d) => (d.id === docId ? { ...d, title } : d)));
   }, []);
 
+  const updateDocMode = useCallback((docId: string, mode: DocMode) => {
+    setDocs((prev) => prev.map((d) => (d.id === docId ? { ...d, mode } : d)));
+    fetch(`/api/doc/${encodeURIComponent(docId)}/mode`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode }),
+    }).catch((err) => console.error("Failed to update doc mode:", err));
+  }, []);
+
   return {
     docs,
     activeDoc,
@@ -112,5 +151,6 @@ export function useDocs() {
     createDoc,
     deleteDoc,
     updateDocTitle,
+    updateDocMode,
   };
 }

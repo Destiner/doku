@@ -17,6 +17,7 @@ export function App() {
     createDoc,
     deleteDoc,
     updateDocTitle,
+    updateDocMode,
   } = useDocs();
   const [mode, setMode] = useState<"edit" | "view">("view");
   const toggleMode = useCallback(() => {
@@ -34,6 +35,9 @@ export function App() {
     removeQueuedMessage,
     messageQueue,
   } = useChat(activeDoc, updateDocTitle);
+
+  const activeDocEntry = docs.find((d) => d.id === activeDoc);
+  const activeDocMode = activeDocEntry?.mode || "planning";
 
   const docIsEmpty = !content || content.trim() === "";
   const chatIsEmpty = messages.length === 0 && !isStreaming;
@@ -89,7 +93,10 @@ export function App() {
               </option>
             ))}
           </select>
-          <button className={styles.createBtn} onClick={createDoc}>
+          {phase !== "compose" && (
+            <span className={styles.modeBadge}>{activeDocMode}</span>
+          )}
+          <button className={styles.createBtn} onClick={() => createDoc()}>
             +
           </button>
           {activeDoc && (
@@ -117,6 +124,10 @@ export function App() {
             onSubmit={sendMessage}
             recentDocs={recentDocs}
             onNavigateToDoc={setActiveDoc}
+            mode={activeDocMode}
+            onModeChange={(m) => {
+              if (activeDoc) updateDocMode(activeDoc, m);
+            }}
           />
         )}
         {phase === "chat-focused" && (

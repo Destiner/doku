@@ -1,16 +1,47 @@
 import { useState, useRef, useEffect } from "react";
 import { PaperPlaneRight } from "@phosphor-icons/react";
-import { DocEntry } from "../hooks/useDocs";
+import { DocEntry, DocMode } from "../hooks/useDocs";
 import { relativeTime } from "../utils/time";
 import styles from "./EmptyState.module.css";
+
+const MODE_CONFIG: Array<{
+  value: DocMode;
+  label: string;
+  tooltip: string;
+}> = [
+  {
+    value: "planning",
+    label: "Planning",
+    tooltip: "Create implementation plans, specs, and architecture decisions",
+  },
+  {
+    value: "research",
+    label: "Research",
+    tooltip:
+      "Investigate topics, synthesize findings, and write research reports",
+  },
+  {
+    value: "general",
+    label: "General",
+    tooltip: "Freeform document editing for any use case",
+  },
+];
 
 interface Props {
   onSubmit: (message: string) => void;
   recentDocs: DocEntry[];
   onNavigateToDoc: (docId: string) => void;
+  mode: DocMode;
+  onModeChange: (mode: DocMode) => void;
 }
 
-export function EmptyState({ onSubmit, recentDocs, onNavigateToDoc }: Props) {
+export function EmptyState({
+  onSubmit,
+  recentDocs,
+  onNavigateToDoc,
+  mode,
+  onModeChange,
+}: Props) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -43,6 +74,18 @@ export function EmptyState({ onSubmit, recentDocs, onNavigateToDoc }: Props) {
   return (
     <div className={styles.container}>
       <div className={styles.inner}>
+        <div className={styles.modeSelector}>
+          {MODE_CONFIG.map((m) => (
+            <button
+              key={m.value}
+              className={`${styles.modeButton} ${mode === m.value ? styles.modeButtonActive : ""}`}
+              onClick={() => onModeChange(m.value)}
+              title={m.tooltip}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
         <div className={styles.inputWrapper}>
           <textarea
             ref={textareaRef}
