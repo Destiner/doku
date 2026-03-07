@@ -397,10 +397,17 @@ export function generateDocName(projectDir: string): string {
 
 export type DocMode = "planning" | "research" | "general";
 
+export interface SessionMeta {
+  sessionId: string;
+  createdAt: string;
+  label?: string;
+}
+
 export interface DocMeta {
   name: string;
   mode: DocMode;
-  sessionId?: string;
+  sessions?: SessionMeta[];
+  activeSessionIndex?: number;
   title?: string;
   createdAt: string;
   updatedAt: string;
@@ -437,6 +444,12 @@ export function resolveDocName(
   return meta.docs[docId]?.name ?? null;
 }
 
+export function getActiveSessionId(doc: DocMeta): string | null {
+  if (!doc.sessions || doc.sessions.length === 0) return null;
+  const idx = doc.activeSessionIndex ?? doc.sessions.length - 1;
+  return doc.sessions[idx]?.sessionId ?? null;
+}
+
 export function listDocFiles(projectDir: string): string[] {
   if (!existsSync(projectDir)) return [];
   return readdirSync(projectDir)
@@ -449,24 +462,26 @@ export function migrateMetadata(projectDir: string): void {
   let changed = false;
 
   for (const [id, doc] of Object.entries(meta.docs)) {
-    if (doc.createdAt && doc.updatedAt) continue;
+    // Migrate missing timestamps
+    if (!doc.createdAt || !doc.updatedAt) {
+      const docPath = getDocPath(projectDir, doc.name);
+      let createdAt: string;
+      let updatedAt: string;
 
-    const docPath = getDocPath(projectDir, doc.name);
-    let createdAt: string;
-    let updatedAt: string;
+      if (existsSync(docPath)) {
+        const stat = statSync(docPath);
+        createdAt = stat.birthtime.toISOString();
+        updatedAt = stat.mtime.toISOString();
+      } else {
+        const now = new Date().toISOString();
+        createdAt = now;
+        updatedAt = now;
+      }
 
-    if (existsSync(docPath)) {
-      const stat = statSync(docPath);
-      createdAt = stat.birthtime.toISOString();
-      updatedAt = stat.mtime.toISOString();
-    } else {
-      const now = new Date().toISOString();
-      createdAt = now;
-      updatedAt = now;
+      meta.docs[id] = { ...doc, createdAt, updatedAt };
+      changed = true;
     }
 
-    meta.docs[id] = { ...doc, createdAt, updatedAt };
-    changed = true;
   }
 
   if (changed) {

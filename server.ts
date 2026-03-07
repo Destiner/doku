@@ -2,7 +2,7 @@ import { spawn } from "bun";
 import { existsSync, readFileSync, statSync, readdirSync } from "fs";
 import { join, resolve, extname, relative } from "path";
 import { homedir } from "os";
-import { encodeProjectPath } from "./storage";
+import { encodeProjectPath, getActiveSessionId } from "./storage";
 import {
   type StorageProvider,
   FileSystemStorage,
@@ -426,7 +426,7 @@ const server = Bun.serve({
 
       const docPath = storage.getDocFilePath(docMeta.name);
 
-      const currentSessionId = docMeta.sessionId || null;
+      const currentSessionId = getActiveSessionId(docMeta);
 
       const env = { ...process.env };
       delete env.CLAUDECODE;
@@ -557,8 +557,20 @@ const server = Bun.serve({
               capturedSessions.set(docId, event.session_id as string);
               const updatedMeta = storage.getMetadata();
               if (updatedMeta.docs[docId]) {
-                updatedMeta.docs[docId].sessionId = event.session_id as string;
-                updatedMeta.docs[docId].updatedAt = new Date().toISOString();
+                const sid = event.session_id as string;
+                const now = new Date().toISOString();
+                const doc = updatedMeta.docs[docId];
+                if (!doc.sessions) {
+                  doc.sessions = [];
+                }
+                const existingIdx = doc.sessions.findIndex(
+                  (s) => s.sessionId === sid,
+                );
+                if (existingIdx === -1) {
+                  doc.sessions.push({ sessionId: sid, createdAt: now });
+                  doc.activeSessionIndex = doc.sessions.length - 1;
+                }
+                doc.updatedAt = now;
                 storage.setMetadata(updatedMeta);
               }
               console.log(
@@ -800,8 +812,9 @@ const server = Bun.serve({
     if (historyMatch && req.method === "GET") {
       const docId = decodeURIComponent(historyMatch[1]);
       const meta = storage.getMetadata();
-      const sessionId =
-        meta.docs[docId]?.sessionId || capturedSessions.get(docId);
+      const sessionId = (meta.docs[docId]
+        ? getActiveSessionId(meta.docs[docId])
+        : null) || capturedSessions.get(docId);
 
       if (!sessionId) {
         return jsonResponse({ messages: [] });
@@ -850,7 +863,7 @@ const server = Bun.serve({
       if (req.method === "DELETE" && url.searchParams.has("ifEmpty")) {
         const content = storage.getDocContent(docName) ?? "";
         const meta = storage.getMetadata();
-        const hasSession = !!meta.docs[docId]?.sessionId;
+        const hasSession = !!(meta.docs[docId]?.sessions && meta.docs[docId].sessions.length > 0);
         if (content.trim() !== "" || hasSession) {
           return jsonResponse({ deleted: false });
         }
