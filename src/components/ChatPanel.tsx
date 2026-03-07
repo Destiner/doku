@@ -1,13 +1,20 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { PaperPlaneRight, Stop, X } from "@phosphor-icons/react";
-import { useChat } from "../hooks/useChat";
+import { ChatMessage as ChatMessageType } from "../hooks/useChat";
 import { ChatMessage } from "./ChatMessage";
 import { FileSelector } from "./FileSelector";
 import styles from "./ChatPanel.module.css";
 
 interface Props {
-  docId: string | null;
-  onTitleUpdate?: (docId: string, title: string) => void;
+  messages: ChatMessageType[];
+  isStreaming: boolean;
+  sendMessage: (prompt: string) => void;
+  abortMessage: () => void;
+  submitAnswers: (answers: Record<string, string>) => void;
+  queueMessage: (prompt: string) => void;
+  removeQueuedMessage: (index: number) => void;
+  messageQueue: string[];
+  fullWidth?: boolean;
 }
 
 function detectAtQuery(text: string, cursorPos: number): string | null {
@@ -19,17 +26,17 @@ function detectAtQuery(text: string, cursorPos: number): string | null {
   return query;
 }
 
-export function ChatPanel({ docId, onTitleUpdate }: Props) {
-  const {
-    messages,
-    isStreaming,
-    sendMessage,
-    abortMessage,
-    submitAnswers,
-    queueMessage,
-    removeQueuedMessage,
-    messageQueue,
-  } = useChat(docId, onTitleUpdate);
+export function ChatPanel({
+  messages,
+  isStreaming,
+  sendMessage,
+  abortMessage,
+  submitAnswers,
+  queueMessage,
+  removeQueuedMessage,
+  messageQueue,
+  fullWidth,
+}: Props) {
   const [input, setInput] = useState("");
   const sentinelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -130,9 +137,22 @@ export function ChatPanel({ docId, onTitleUpdate }: Props) {
     }
   }
 
+  const panelClass = fullWidth
+    ? `${styles.panel} ${styles.panelFullWidth}`
+    : styles.panel;
+  const messagesClass = fullWidth
+    ? `${styles.messages} ${styles.messagesFullWidth}`
+    : styles.messages;
+  const inputAreaClass = fullWidth
+    ? `${styles.inputArea} ${styles.inputAreaFullWidth}`
+    : styles.inputArea;
+  const queueSectionClass = fullWidth
+    ? `${styles.queueSection} ${styles.queueSectionFullWidth}`
+    : styles.queueSection;
+
   return (
-    <div className={styles.panel}>
-      <div className={styles.messages}>
+    <div className={panelClass}>
+      <div className={messagesClass}>
         {messages.map((msg, i) => (
           <ChatMessage key={i} message={msg} onSubmitAnswers={submitAnswers} />
         ))}
@@ -155,7 +175,7 @@ export function ChatPanel({ docId, onTitleUpdate }: Props) {
         <div ref={sentinelRef} />
       </div>
       {messageQueue.length > 0 && (
-        <div className={styles.queueSection}>
+        <div className={queueSectionClass}>
           <div
             className={styles.queueHeader}
             onClick={() => setQueueCollapsed((c) => !c)}
@@ -183,7 +203,7 @@ export function ChatPanel({ docId, onTitleUpdate }: Props) {
           )}
         </div>
       )}
-      <div className={styles.inputArea}>
+      <div className={inputAreaClass}>
         {atQuery !== null && (
           <FileSelector
             query={atQuery}

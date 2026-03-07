@@ -5,6 +5,29 @@
   background: #fff;
 }
 
+.panelFullWidth {
+  width: auto;
+  flex: 1;
+}
+
+.messagesFullWidth {
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.inputAreaFullWidth {
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.queueSectionFullWidth {
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -159,7 +182,9 @@
 }
 
 @keyframes wave {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
     opacity: 0.4;
   }

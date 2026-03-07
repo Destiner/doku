@@ -1,20 +1,23 @@
-import { useDoc } from "../hooks/useDoc";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { MarkdownViewer } from "./MarkdownViewer";
 import styles from "./DocPanel.module.css";
 
 interface Props {
-  docId: string | null;
   mode: "edit" | "view";
+  content: string;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  onInput: () => void;
 }
 
-export function DocPanel({ docId, mode }: Props) {
-  const { textareaRef, handleInput, content } = useDoc(docId);
-
+export function DocPanel({ mode, content, textareaRef, onInput }: Props) {
   return (
     <div className={styles.panel}>
       {mode === "edit" ? (
-        <MarkdownEditor textareaRef={textareaRef} onInput={handleInput} initialContent={content} />
+        <MarkdownEditor
+          textareaRef={textareaRef}
+          onInput={onInput}
+          initialContent={content}
+        />
       ) : (
         <MarkdownViewer content={content} />
       )}
