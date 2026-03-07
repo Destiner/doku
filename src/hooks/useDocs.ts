@@ -88,27 +88,15 @@ export function useDocs() {
 
   useEffect(() => {
     async function init() {
-      const list = await fetchDocs();
-      if (list.length === 0) {
-        const res = await fetch("/api/docs", { method: "POST" });
-        const { id, name } = (await res.json()) as { id: string; name: string };
-        const now = new Date().toISOString();
-        setDocs([{ id, name, createdAt: now, updatedAt: now }]);
-        setActiveDocState(id);
-        return;
-      }
-
-      try {
-        const res = await fetch("/api/last-opened");
-        const { docId } = (await res.json()) as { docId: string | null };
-        if (docId && list.some((d) => d.id === docId)) {
-          setActiveDocState(docId);
-          return;
-        }
-      } catch {
-        // fall through to default
-      }
-      setActiveDocState(list[0].id);
+      await fetchDocs();
+      const res = await fetch("/api/docs", { method: "POST" });
+      const { id, name } = (await res.json()) as { id: string; name: string };
+      const now = new Date().toISOString();
+      setDocs((prev) => [
+        { id, name, createdAt: now, updatedAt: now },
+        ...prev,
+      ]);
+      setActiveDocState(id);
     }
     init();
   }, [fetchDocs]);
