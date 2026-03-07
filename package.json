@@ -1,5 +1,6 @@
 {
   "name": "doku",
+  "type": "module",
   "version": "0.0.1",
   "scripts": {
     "dev": "concurrently \"NODE_ENV=development bun run --watch server.ts\" \"bunx vite\"",
@@ -7,6 +8,7 @@
     "build": "bunx vite build",
     "start": "bun run server.ts",
     "pack": "bun run build && bun run scripts/pack.ts",
+    "lint": "eslint . --fix",
     "test": "vitest run"
   },
   "dependencies": {
@@ -23,10 +25,14 @@
     "vite": "^7.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "concurrently": "^9.2.1",
+    "eslint": "^10.0.3",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18"
   }
 }
