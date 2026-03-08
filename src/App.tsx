@@ -64,23 +64,17 @@ export function App() {
 
   const recentDocs = docs.filter((d) => d.id !== activeDoc).slice(0, 3);
 
+  const copyMarkdown = useCallback(() => {
+    if (!content) return;
+    navigator.clipboard
+      .writeText(content)
+      .catch((err) => console.error("Failed to copy markdown:", err));
+  }, [content]);
+
   return (
     <>
       <header className={styles.header}>
         <span>doku</span>
-        {phase === "classic" && (
-          <button
-            className={`${styles.modeToggle} ${mode === "view" ? styles.modeToggleActive : ""}`}
-            onClick={toggleMode}
-            title={
-              mode === "edit" ? "Switch to view mode" : "Switch to edit mode"
-            }
-          >
-            <i
-              className={mode === "edit" ? "ph ph-eye" : "ph ph-pencil-simple"}
-            />
-          </button>
-        )}
         <div className={styles.docSwitcher}>
           <select
             className={styles.docSelect}
@@ -97,7 +91,8 @@ export function App() {
             <span className={styles.modeBadge}>{activeDocMode}</span>
           )}
           <button className={styles.createBtn} onClick={() => createDoc()}>
-            +
+            <i className="ph ph-plus" />
+            <span>New</span>
           </button>
           {activeDoc && (
             <button
@@ -106,6 +101,7 @@ export function App() {
               title="Copy file path"
             >
               <i className="ph ph-copy" />
+              <span>Copy Path</span>
             </button>
           )}
           {activeDoc && docs.length > 1 && (
@@ -113,7 +109,8 @@ export function App() {
               className={styles.deleteBtn}
               onClick={() => deleteDoc(activeDoc)}
             >
-              &times;
+              <i className="ph ph-trash" />
+              <span>Delete</span>
             </button>
           )}
         </div>
@@ -150,6 +147,8 @@ export function App() {
               content={content}
               textareaRef={textareaRef}
               onInput={handleInput}
+              onToggleMode={toggleMode}
+              onCopyMarkdown={copyMarkdown}
             />
             <ChatPanel
               messages={messages}

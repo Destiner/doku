@@ -7,11 +7,42 @@ interface Props {
   content: string;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   onInput: () => void;
+  onToggleMode: () => void;
+  onCopyMarkdown: () => void;
 }
 
-export function DocPanel({ mode, content, textareaRef, onInput }: Props) {
+export function DocPanel({
+  mode,
+  content,
+  textareaRef,
+  onInput,
+  onToggleMode,
+  onCopyMarkdown,
+}: Props) {
   return (
     <div className={styles.panel}>
+      <div className={styles.overlay}>
+        <button
+          className={`${styles.overlayBtn} ${mode === "view" ? styles.overlayBtnActive : ""}`}
+          onClick={onToggleMode}
+          title={
+            mode === "edit" ? "Switch to view mode" : "Switch to edit mode"
+          }
+        >
+          <i
+            className={
+              mode === "edit" ? "ph ph-eye" : "ph ph-pencil-simple"
+            }
+          />
+        </button>
+        <button
+          className={styles.overlayBtn}
+          onClick={onCopyMarkdown}
+          title="Copy as markdown"
+        >
+          <i className="ph ph-clipboard-text" />
+        </button>
+      </div>
       {mode === "edit" ? (
         <MarkdownEditor
           textareaRef={textareaRef}
