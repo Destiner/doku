@@ -95,13 +95,15 @@ export async function runHarness(input: HarnessInput): Promise<HarnessResult> {
       sessionId = event.session_id as string;
     }
 
-    if (
-      event.type === "content_block_start" &&
-      (event.content_block as Record<string, unknown>)?.type === "tool_use"
-    ) {
-      const name = (event.content_block as Record<string, unknown>)?.name as string;
-      if (name && !toolsUsed.includes(name)) {
-        toolsUsed.push(name);
+    // stream-json format: tool_use blocks are nested in assistant message content
+    if (event.type === "assistant" && event.message) {
+      const msg = event.message as { content?: Array<{ type: string; name?: string }> };
+      if (Array.isArray(msg.content)) {
+        for (const block of msg.content) {
+          if (block.type === "tool_use" && block.name && !toolsUsed.includes(block.name)) {
+            toolsUsed.push(block.name);
+          }
+        }
       }
     }
   }

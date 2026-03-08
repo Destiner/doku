@@ -528,9 +528,6 @@ const server = Bun.serve({
             })();
           }
 
-          // AskUserQuestion detection state
-          let serverToolName: string | null = null;
-
           function captureSession(event: Record<string, unknown>) {
             if (event.session_id && !sessionCaptured) {
               sessionCaptured = true;
@@ -569,40 +566,22 @@ const server = Bun.serve({
 
             if (suppressAfterAskUser) return;
 
-            // Track tool_use blocks to detect AskUserQuestion
-            if (
-              event.type === "content_block_start" &&
-              (event.content_block as Record<string, unknown>)?.type ===
-                "tool_use"
-            ) {
-              const cb = event.content_block as Record<string, unknown>;
-              serverToolName = (cb.name as string) || null;
-              if (serverToolName === "AskUserQuestion") {
-                return; // suppress
+            // Detect AskUserQuestion in assistant message content blocks
+            if (event.type === "assistant") {
+              const msg = event.message as {
+                content?: Array<{ type: string; name?: string }>;
+              } | undefined;
+              if (Array.isArray(msg?.content)) {
+                for (const block of msg!.content) {
+                  if (block.type === "tool_use" && block.name === "AskUserQuestion") {
+                    // Suppress this event and all further events
+                    // (the CLI will auto-deny the tool and Claude will respond
+                    // about the denial — we don't want that shown to the user)
+                    suppressAfterAskUser = true;
+                    return;
+                  }
+                }
               }
-            }
-
-            if (
-              event.type === "content_block_delta" &&
-              (event.delta as Record<string, unknown>)?.type ===
-                "input_json_delta" &&
-              serverToolName === "AskUserQuestion"
-            ) {
-              return; // suppress
-            }
-
-            if (event.type === "content_block_stop" && serverToolName) {
-              if (serverToolName === "AskUserQuestion") {
-                // Suppress all further events from this process
-                // (the CLI will auto-deny the tool and Claude will respond
-                // about the denial — we don't want that shown to the user)
-                suppressAfterAskUser = true;
-                serverToolName = null;
-                return;
-              }
-
-              // Reset state for non-AskUserQuestion tools
-              serverToolName = null;
             }
 
             enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
