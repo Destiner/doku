@@ -8,6 +8,7 @@
     "build": "bunx vite build",
     "start": "bun run server.ts",
     "pack": "bun run build && bun run scripts/pack.ts",
+    "build:npm": "bun run scripts/build-npm.ts",
     "lint": "eslint . --fix",
     "test": "vitest run",
     "test:harness": "bun run test/harness/runner.ts"

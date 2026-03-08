@@ -2,3 +2,4 @@ node_modules/
 dist/
 _assets.gen.ts
 doku
+npm/
