@@ -9,7 +9,8 @@
     "start": "bun run server.ts",
     "pack": "bun run build && bun run scripts/pack.ts",
     "lint": "eslint . --fix",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:harness": "bun run test/harness/runner.ts"
   },
   "dependencies": {
     "@codemirror/lang-markdown": "^6.5.0",

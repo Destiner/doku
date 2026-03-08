@@ -10,6 +10,7 @@ import {
   generateDocId,
 } from "./storage-provider";
 import { describeToolCall, generateToolSummary } from "./src/utils/toolCalls";
+import { buildClaudeCommand } from "./harness";
 let embeddedAssetPaths: Record<string, string> = {};
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -432,32 +433,12 @@ const server = Bun.serve({
       const env = { ...process.env };
       delete env.CLAUDECODE;
 
-      const cmd = [
-        "claude",
-        "-p",
-        "--output-format",
-        "stream-json",
-        "--verbose",
-        "--dangerously-skip-permissions",
-        "--disallowed-tools",
-        "EnterPlanMode",
-        "ExitPlanMode",
-      ];
-
-      if (currentSessionId) {
-        cmd.push("--resume", currentSessionId);
-      } else {
-        const docModePrompts: Record<string, string> = {
-          planning: `You are used exclusively for planning. Your role is to help the user think through ideas, draft plans, and write specs—all by editing a shared document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nAlways write plans, research, and proposals directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.`,
-          research: `Your role is to investigate topics, synthesize findings, and write research reports by editing a shared document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nYou have web tools (WebSearch, WebFetch) available for internet research, but codebase research is equally valid—not all research requires the web.\nAlways write findings and analysis directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.`,
-          general: `Write to the document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nAlways write directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.`,
-        };
-        const systemPrompt =
-          docModePrompts[docMeta.mode] || docModePrompts.planning;
-        cmd.push("--append-system-prompt", systemPrompt);
-      }
-
-      cmd.push(prompt);
+      const cmd = buildClaudeCommand({
+        prompt,
+        docPath,
+        mode: docMeta.mode,
+        sessionId: currentSessionId ?? undefined,
+      });
 
       console.log(
         `[chat] spawning claude (doc: ${docId}/${docMeta.name}, session: ${currentSessionId || "new"}) prompt: "${prompt.slice(0, 100)}..."`,
