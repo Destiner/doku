@@ -264,6 +264,14 @@ function parseChatHistory(sessionId: string): ChatMessage[] {
   return messages;
 }
 
+// Check that Claude CLI is installed
+if (!Bun.which("claude")) {
+  console.error(
+    "Error: 'claude' CLI not found. Please install it first: https://claude.com/product/claude-code",
+  );
+  process.exit(1);
+}
+
 const storage: StorageProvider = isPlayground
   ? new EphemeralStorage()
   : new FileSystemStorage(PROJECT_CWD);
