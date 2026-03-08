@@ -20,8 +20,9 @@ jobs:
 
       - name: Publish platform packages then main package
         run: |
-          for dir in npm/doku-app-darwin-arm64 npm/doku-app-darwin-x64 npm/doku-app-linux-x64 npm/doku-app-linux-arm64 npm/doku-app; do
-            cd "$dir" && npm publish --access public && cd -
+          for dir in npm/doku-app-darwin-arm64 npm/doku-app-darwin-x64 npm/doku-app-linux-x64 npm/doku-app-linux-arm64; do
+            cd "$dir" && npm publish --access public || true && cd -
           done
+          cd npm/doku-app && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
