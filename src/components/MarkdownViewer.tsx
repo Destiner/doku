@@ -18,7 +18,7 @@ export function MarkdownViewer({ content }: Props) {
         codeChild?.type === "element" &&
         codeChild.tagName === "code" &&
         Array.isArray(codeChild.properties?.className) &&
-        codeChild.properties.className.some((c: string) =>
+        codeChild.properties.className.some((c: string | number) =>
           String(c).startsWith("language-"),
         )
       ) {
