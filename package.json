@@ -10,6 +10,10 @@
     "pack": "bun run build && bun run scripts/pack.ts",
     "build:npm": "bun run scripts/build-npm.ts",
     "lint": "eslint . --fix",
+    "lint:check": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:harness": "bun run test/harness/runner.ts"
   },
@@ -31,6 +35,7 @@
     "concurrently": "^9.2.1",
     "eslint": "^10.0.3",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "prettier": "^3.8.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18"

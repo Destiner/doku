@@ -18,8 +18,9 @@
   margin: 0;
   padding: 24px;
   border: none;
-  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Segoe UI Mono", Menlo,
-    Monaco, Consolas, monospace;
+  font-family:
+    ui-monospace, "SF Mono", "Cascadia Code", "Segoe UI Mono", Menlo, Monaco,
+    Consolas, monospace;
   font-size: 14px;
   line-height: 1.7;
   tab-size: 4;

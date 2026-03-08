@@ -23,7 +23,7 @@ try {
   binPath = require.resolve(`${pkg}/bin/doku`);
 } catch {
   console.error(
-    `Platform package ${pkg} is not installed. Try reinstalling doku-app.`
+    `Platform package ${pkg} is not installed. Try reinstalling doku-app.`,
   );
   process.exit(1);
 }

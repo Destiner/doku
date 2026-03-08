@@ -47,7 +47,10 @@ export function buildClaudeCommand(input: HarnessInput): string[] {
   if (input.sessionId) {
     cmd.push("--resume", input.sessionId);
   } else {
-    cmd.push("--append-system-prompt", buildSystemPrompt(input.mode, input.docPath));
+    cmd.push(
+      "--append-system-prompt",
+      buildSystemPrompt(input.mode, input.docPath),
+    );
   }
 
   cmd.push(input.prompt);
@@ -97,10 +100,16 @@ export async function runHarness(input: HarnessInput): Promise<HarnessResult> {
 
     // stream-json format: tool_use blocks are nested in assistant message content
     if (event.type === "assistant" && event.message) {
-      const msg = event.message as { content?: Array<{ type: string; name?: string }> };
+      const msg = event.message as {
+        content?: Array<{ type: string; name?: string }>;
+      };
       if (Array.isArray(msg.content)) {
         for (const block of msg.content) {
-          if (block.type === "tool_use" && block.name && !toolsUsed.includes(block.name)) {
+          if (
+            block.type === "tool_use" &&
+            block.name &&
+            !toolsUsed.includes(block.name)
+          ) {
             toolsUsed.push(block.name);
           }
         }

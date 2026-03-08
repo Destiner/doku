@@ -1,10 +1,7 @@
 import { mkdirSync, cpSync, writeFileSync, readdirSync } from "fs";
 import { join, relative } from "path";
 
-const VERSION = (process.env.npm_package_version || "0.1.0").replace(
-  /^v/,
-  "",
-);
+const VERSION = (process.env.npm_package_version || "0.1.0").replace(/^v/, "");
 
 const TARGETS = [
   {

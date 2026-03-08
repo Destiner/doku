@@ -57,7 +57,8 @@
 .content pre code {
   display: block;
   padding: 16px;
-  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
+  font-family:
+    ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
     "DejaVu Sans Mono", monospace;
   font-size: 14px;
   line-height: 1.6;
@@ -65,7 +66,8 @@
 }
 
 .content :not(pre) > code {
-  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
+  font-family:
+    ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
     "DejaVu Sans Mono", monospace;
   background: #f0f0f0;
   padding: 2px 6px;

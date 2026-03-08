@@ -8,7 +8,11 @@ interface Props {
   initialContent: string;
 }
 
-export function MarkdownEditor({ textareaRef, onInput, initialContent }: Props) {
+export function MarkdownEditor({
+  textareaRef,
+  onInput,
+  initialContent,
+}: Props) {
   const highlightRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const { highlight, ready } = useShiki();
@@ -35,7 +39,11 @@ export function MarkdownEditor({ textareaRef, onInput, initialContent }: Props) 
     if (!el) return;
 
     const observer = new MutationObserver(syncHighlight);
-    observer.observe(el, { childList: true, characterData: true, subtree: true });
+    observer.observe(el, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
 
     // Also poll for programmatic .value changes (MutationObserver won't catch those)
     const interval = setInterval(() => {
@@ -56,7 +64,11 @@ export function MarkdownEditor({ textareaRef, onInput, initialContent }: Props) 
   return (
     <div className={styles.container}>
       <div className={styles.inner}>
-        <div ref={highlightRef} className={styles.highlight} aria-hidden="true" />
+        <div
+          ref={highlightRef}
+          className={styles.highlight}
+          aria-hidden="true"
+        />
         <textarea
           ref={textareaRef}
           className={styles.textarea}

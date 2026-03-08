@@ -17,7 +17,9 @@ async function runTestCase(test: TestCase): Promise<TestCaseResult> {
 
   try {
     // Copy fixture into project dir
-    cpSync(join(FIXTURES_DIR, "simple-ts-app"), projectDir, { recursive: true });
+    cpSync(join(FIXTURES_DIR, "simple-ts-app"), projectDir, {
+      recursive: true,
+    });
 
     // Create doc file
     writeFileSync(docPath, test.initialDocContent || "", "utf-8");
@@ -36,10 +38,7 @@ async function runTestCase(test: TestCase): Promise<TestCaseResult> {
         cwd: projectDir,
       }),
       new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Test timed out")),
-          DEFAULT_TIMEOUT,
-        ),
+        setTimeout(() => reject(new Error("Test timed out")), DEFAULT_TIMEOUT),
       ),
     ]);
 
@@ -141,7 +140,9 @@ async function main() {
   console.log();
   const passed = results.filter((r) => r.passed).length;
   const failed = results.filter((r) => !r.passed).length;
-  console.log(`Results: ${passed} passed, ${failed} failed, ${results.length} total`);
+  console.log(
+    `Results: ${passed} passed, ${failed} failed, ${results.length} total`,
+  );
 
   process.exit(failed > 0 ? 1 : 0);
 }

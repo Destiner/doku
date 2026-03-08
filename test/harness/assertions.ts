@@ -27,7 +27,10 @@ export function runAssertion(
     }
 
     case "doc_contains": {
-      const passed = matchesPattern(result.harness.docContent, assertion.pattern);
+      const passed = matchesPattern(
+        result.harness.docContent,
+        assertion.pattern,
+      );
       return {
         assertion,
         passed,
@@ -38,7 +41,10 @@ export function runAssertion(
     }
 
     case "doc_not_contains": {
-      const passed = !matchesPattern(result.harness.docContent, assertion.pattern);
+      const passed = !matchesPattern(
+        result.harness.docContent,
+        assertion.pattern,
+      );
       return {
         assertion,
         passed,

@@ -30,9 +30,7 @@ export function DocPanel({
           }
         >
           <i
-            className={
-              mode === "edit" ? "ph ph-eye" : "ph ph-pencil-simple"
-            }
+            className={mode === "edit" ? "ph ph-eye" : "ph ph-pencil-simple"}
           />
         </button>
         <button

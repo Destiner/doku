@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import {
-  createHighlighterCore,
-  type HighlighterCore,
-} from "shiki/core";
+import { createHighlighterCore, type HighlighterCore } from "shiki/core";
 import { createOnigurumaEngine } from "shiki/engine/oniguruma";
 import ayuLight from "shiki/themes/ayu-light.mjs";
 import markdown from "shiki/langs/markdown.mjs";

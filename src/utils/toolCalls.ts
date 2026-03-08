@@ -130,10 +130,8 @@ export function generateToolSummary(
     Task: (n) => `ran ${n} agent${n > 1 ? "s" : ""}`,
     AskUserQuestion: (n) => `asked ${n} question${n > 1 ? "s" : ""}`,
     TodoWrite: () => "updated tasks",
-    ToolSearch: (n) =>
-      `searched for ${n} tool${n > 1 ? "s" : ""}`,
-    WebSearch: (n) =>
-      `searched online ${n} time${n > 1 ? "s" : ""}`,
+    ToolSearch: (n) => `searched for ${n} tool${n > 1 ? "s" : ""}`,
+    WebSearch: (n) => `searched online ${n} time${n > 1 ? "s" : ""}`,
   };
 
   const parts: string[] = [];
