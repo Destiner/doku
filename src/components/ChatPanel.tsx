@@ -15,6 +15,7 @@ interface Props {
   removeQueuedMessage: (index: number) => void;
   messageQueue: string[];
   fullWidth?: boolean;
+  currentDocId?: string | null;
 }
 
 function detectAtQuery(text: string, cursorPos: number): string | null {
@@ -36,6 +37,7 @@ export function ChatPanel({
   removeQueuedMessage,
   messageQueue,
   fullWidth,
+  currentDocId,
 }: Props) {
   const [input, setInput] = useState("");
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -212,8 +214,10 @@ export function ChatPanel({
             onFilesChange={setSelectorFiles}
             onSelect={handleFileSelect}
             files={selectorFiles}
+            currentDocId={currentDocId}
           />
         )}
+
         <textarea
           ref={textareaRef}
           className={styles.input}

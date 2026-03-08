@@ -81,6 +81,16 @@ export function useChat(
   const [isStreaming, setIsStreaming] = useState(false);
   const [messageQueue, setMessageQueue] = useState<string[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const cwdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/cwd")
+      .then((r) => r.json())
+      .then((data: { cwd: string }) => {
+        cwdRef.current = data.cwd;
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!docId) {
@@ -148,7 +158,11 @@ export function useChat(
       ) {
         if (id && seenToolIds.has(id)) return;
         if (id) seenToolIds.add(id);
-        const { label, detail } = describeToolCall(name, params);
+        const { label, detail } = describeToolCall(
+          name,
+          params,
+          cwdRef.current,
+        );
 
         if (!currentToolCallsSegment) {
           currentToolCallsSegment = {

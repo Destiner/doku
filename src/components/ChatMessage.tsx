@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useReducer } from "react";
 import type {
   ChatMessage as ChatMessageType,
   MessageSegment,
@@ -17,7 +17,12 @@ function ToolCallsBlock({
 }: {
   segment: Extract<MessageSegment, { type: "toolCalls" }>;
 }) {
-  const [collapsed, setCollapsed] = useState(segment.collapsed);
+  const [manualToggle, toggle] = useReducer((s: number) => s + 1, 0);
+  const isManuallyToggled = manualToggle > 0;
+  const collapsed = isManuallyToggled
+    ? manualToggle % 2 === (segment.collapsed ? 0 : 1)
+    : segment.collapsed;
+
   const isSingle = segment.calls.length === 1;
 
   if (isSingle) {
@@ -35,10 +40,7 @@ function ToolCallsBlock({
   return (
     <div className={styles.toolCallsWrapper}>
       {segment.summary && (
-        <div
-          className={styles.toolSummary}
-          onClick={() => setCollapsed((c) => !c)}
-        >
+        <div className={styles.toolSummary} onClick={toggle}>
           <i
             className={`ph ph-caret-right ${styles.caretIcon} ${!collapsed ? styles.caretExpanded : ""}`}
           />

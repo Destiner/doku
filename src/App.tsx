@@ -125,6 +125,7 @@ export function App() {
             onModeChange={(m) => {
               if (activeDoc) updateDocMode(activeDoc, m);
             }}
+            currentDocId={activeDoc}
           />
         )}
         {phase === "chat-focused" && (
@@ -138,6 +139,7 @@ export function App() {
             removeQueuedMessage={removeQueuedMessage}
             messageQueue={messageQueue}
             fullWidth
+            currentDocId={activeDoc}
           />
         )}
         {phase === "classic" && (
@@ -159,6 +161,7 @@ export function App() {
               queueMessage={queueMessage}
               removeQueuedMessage={removeQueuedMessage}
               messageQueue={messageQueue}
+              currentDocId={activeDoc}
             />
           </>
         )}

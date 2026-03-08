@@ -6,6 +6,15 @@ export function truncate(str: string, max: number): string {
   return str.length > max ? str.slice(0, max) + "\u2026" : str;
 }
 
+export function displayPath(filePath: string, cwd: string | null): string {
+  if (!cwd) return basename(filePath);
+  const cwdPrefix = cwd.endsWith("/") ? cwd : cwd + "/";
+  if (filePath.startsWith(cwdPrefix)) {
+    return filePath.slice(cwdPrefix.length);
+  }
+  return filePath;
+}
+
 export interface ToolCallDescription {
   label: string;
   detail: string;
@@ -14,22 +23,29 @@ export interface ToolCallDescription {
 export function describeToolCall(
   name: string,
   params: Record<string, unknown>,
+  cwd: string | null = null,
 ): ToolCallDescription {
   switch (name) {
     case "Read":
       return {
         label: "Read",
-        detail: params.file_path ? basename(params.file_path as string) : "",
+        detail: params.file_path
+          ? displayPath(params.file_path as string, cwd)
+          : "",
       };
     case "Edit":
       return {
         label: "Edit",
-        detail: params.file_path ? basename(params.file_path as string) : "",
+        detail: params.file_path
+          ? displayPath(params.file_path as string, cwd)
+          : "",
       };
     case "Write":
       return {
         label: "Write",
-        detail: params.file_path ? basename(params.file_path as string) : "",
+        detail: params.file_path
+          ? displayPath(params.file_path as string, cwd)
+          : "",
       };
     case "Bash":
       return {
@@ -44,7 +60,7 @@ export function describeToolCall(
     case "Grep": {
       const pat = params.pattern ? truncate(params.pattern as string, 40) : "";
       const inPath = params.path
-        ? ` in ${basename(params.path as string)}`
+        ? ` in ${displayPath(params.path as string, cwd)}`
         : "";
       return { label: "Grep", detail: pat ? `${pat}${inPath}` : "" };
     }
@@ -71,6 +87,16 @@ export function describeToolCall(
     }
     case "TodoWrite":
       return { label: "Update tasks", detail: "" };
+    case "ToolSearch":
+      return {
+        label: "Search for tools",
+        detail: params.query ? truncate(params.query as string, 60) : "",
+      };
+    case "WebSearch":
+      return {
+        label: "Search online",
+        detail: params.query ? truncate(params.query as string, 60) : "",
+      };
     default:
       return { label: name, detail: "" };
   }
@@ -86,7 +112,11 @@ export function generateToolSummary(
         ? "Search"
         : tc.name === "Agent"
           ? "Task"
-          : tc.name;
+          : tc.name === "ToolSearch"
+            ? "ToolSearch"
+            : tc.name === "WebSearch"
+              ? "WebSearch"
+              : tc.name;
     counts[key] = (counts[key] || 0) + 1;
   }
 
@@ -100,6 +130,10 @@ export function generateToolSummary(
     Task: (n) => `ran ${n} agent${n > 1 ? "s" : ""}`,
     AskUserQuestion: (n) => `asked ${n} question${n > 1 ? "s" : ""}`,
     TodoWrite: () => "updated tasks",
+    ToolSearch: (n) =>
+      `searched for ${n} tool${n > 1 ? "s" : ""}`,
+    WebSearch: (n) =>
+      `searched online ${n} time${n > 1 ? "s" : ""}`,
   };
 
   const parts: string[] = [];

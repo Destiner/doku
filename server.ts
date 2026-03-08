@@ -398,6 +398,11 @@ const server = Bun.serve({
       return jsonResponse({ ok: true });
     }
 
+    // --- GET /api/cwd ---
+    if (pathname === "/api/cwd" && req.method === "GET") {
+      return jsonResponse({ cwd: PROJECT_CWD });
+    }
+
     // --- POST /api/chat/abort ---
     if (pathname === "/api/chat/abort" && req.method === "POST") {
       const body = await req.json();
@@ -568,12 +573,17 @@ const server = Bun.serve({
 
             // Detect AskUserQuestion in assistant message content blocks
             if (event.type === "assistant") {
-              const msg = event.message as {
-                content?: Array<{ type: string; name?: string }>;
-              } | undefined;
+              const msg = event.message as
+                | {
+                    content?: Array<{ type: string; name?: string }>;
+                  }
+                | undefined;
               if (Array.isArray(msg?.content)) {
                 for (const block of msg!.content) {
-                  if (block.type === "tool_use" && block.name === "AskUserQuestion") {
+                  if (
+                    block.type === "tool_use" &&
+                    block.name === "AskUserQuestion"
+                  ) {
                     // Suppress this event and all further events
                     // (the CLI will auto-deny the tool and Claude will respond
                     // about the denial — we don't want that shown to the user)
@@ -762,9 +772,9 @@ const server = Bun.serve({
     if (historyMatch && req.method === "GET") {
       const docId = decodeURIComponent(historyMatch[1]);
       const meta = storage.getMetadata();
-      const sessionId = (meta.docs[docId]
-        ? getActiveSessionId(meta.docs[docId])
-        : null) || capturedSessions.get(docId);
+      const sessionId =
+        (meta.docs[docId] ? getActiveSessionId(meta.docs[docId]) : null) ||
+        capturedSessions.get(docId);
 
       if (!sessionId) {
         return jsonResponse({ messages: [] });
@@ -813,7 +823,9 @@ const server = Bun.serve({
       if (req.method === "DELETE" && url.searchParams.has("ifEmpty")) {
         const content = storage.getDocContent(docName) ?? "";
         const meta = storage.getMetadata();
-        const hasSession = !!(meta.docs[docId]?.sessions && meta.docs[docId].sessions.length > 0);
+        const hasSession = !!(
+          meta.docs[docId]?.sessions && meta.docs[docId].sessions.length > 0
+        );
         if (content.trim() !== "" || hasSession) {
           return jsonResponse({ deleted: false });
         }
