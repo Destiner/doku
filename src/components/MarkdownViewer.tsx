@@ -1,8 +1,36 @@
+import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
+import { renderMermaidSVG } from "beautiful-mermaid";
 import { useCodeHighlighter } from "../hooks/useCodeHighlighter";
 import styles from "./MarkdownViewer.module.css";
+
+function MermaidDiagram({ code }: { code: string }) {
+  const { svg, error } = useMemo(() => {
+    try {
+      return {
+        svg: renderMermaidSVG(code, { transparent: true, fg: "#1a1a1a" }),
+        error: null,
+      };
+    } catch (err) {
+      return {
+        svg: null,
+        error: err instanceof Error ? err : new Error(String(err)),
+      };
+    }
+  }, [code]);
+
+  if (error) {
+    return <pre className={styles.codeBlock}>{error.message}</pre>;
+  }
+  return (
+    <div
+      className={styles.mermaidBlock}
+      dangerouslySetInnerHTML={{ __html: svg! }}
+    />
+  );
+}
 
 interface Props {
   content: string;
@@ -30,7 +58,13 @@ export function MarkdownViewer({ content }: Props) {
       const match = className?.match(/language-(\w+)/);
       if (match) {
         const code = String(children).replace(/\n$/, "");
-        const html = highlight(code, match[1]);
+        const lang = match[1];
+
+        if (lang === "mermaid") {
+          return <MermaidDiagram code={code} />;
+        }
+
+        const html = highlight(code, lang);
         return (
           <div
             className={styles.codeBlock}
