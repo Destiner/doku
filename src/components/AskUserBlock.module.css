@@ -1,6 +1,6 @@
 .block {
   margin: 8px 0;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e6e6e0;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -10,26 +10,28 @@
 }
 
 .questionSection + .questionSection {
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e6e6e0;
 }
 
 .header {
   display: inline-block;
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #666;
-  background: #f0f0f0;
+  color: #6a6a62;
+  background: #f3f2ee;
   border-radius: 3px;
   padding: 1px 5px;
   margin-bottom: 4px;
 }
 
 .questionText {
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: #1a1a18;
   margin-bottom: 8px;
 }
 
@@ -53,7 +55,7 @@
 }
 
 .option:hover {
-  background: #f8f8f8;
+  background: #f3f2ee;
 }
 
 .optionSelected {
@@ -81,7 +83,7 @@
   width: 14px;
   height: 14px;
   margin-top: 1px;
-  border: 1.5px solid #ccc;
+  border: 1.5px solid #b5b5ad;
   background: #fff;
   display: flex;
   align-items: center;
@@ -124,32 +126,35 @@
 }
 
 .optionLabel {
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: #1a1a18;
 }
 
 .optionDescription {
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 11px;
-  color: #888;
+  color: #9a9a92;
   margin-top: 1px;
 }
 
 .submitArea {
   padding: 8px 12px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e6e6e0;
   display: flex;
   justify-content: flex-end;
 }
 
 .submitButton {
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 12px;
   font-weight: 500;
   padding: 4px 14px;
-  border: 1px solid #ccc;
+  border: 1px solid #e6e6e0;
   border-radius: 5px;
   background: #fff;
-  color: #1a1a1a;
+  color: #1a1a18;
   cursor: pointer;
   transition:
     background 0.1s,
@@ -157,8 +162,8 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background: #f0f0f0;
-  border-color: #aaa;
+  background: #f3f2ee;
+  border-color: #9a9a92;
 }
 
 .submitButton:disabled {

@@ -5,34 +5,35 @@
   right: 0;
   max-height: 200px;
   overflow-y: auto;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: #fafaf8;
+  border: 1px solid #e6e6e0;
   border-radius: 6px;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
   margin-bottom: 4px;
   z-index: 10;
 }
 
 .item {
   padding: 6px 12px;
-  font-size: 13px;
-  font-family: monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #1a1a18;
 }
 
 .active {
-  background: #f0f0f0;
+  background: #f3f2ee;
 }
 
 .itemKind {
   display: inline-block;
   font-size: 10px;
-  font-family: inherit;
-  color: #888;
-  background: #f0f0f0;
+  font-family: "Inter", system-ui, sans-serif;
+  color: #9a9a92;
+  background: #f3f2ee;
   border-radius: 3px;
   padding: 1px 5px;
   margin-right: 8px;

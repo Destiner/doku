@@ -1,38 +1,61 @@
 .message {
-  margin-bottom: 16px;
   line-height: 1.5;
 }
 
 .label {
-  font-weight: 600;
-  font-size: 12px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 14px;
   margin-bottom: 4px;
 }
 
 .userLabel {
-  color: #888;
+  color: #9a9a92;
 }
 
 .assistantLabel {
-  color: #c45200;
+  color: #c45a32;
 }
 
-.content {
-  font-size: 14px;
+.user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.user .label {
+  text-align: right;
+}
+
+.user .content {
+  background: #f3f2ee;
+  border-radius: 12px 12px 4px 12px;
+  padding: 12px 16px;
+  max-width: 340px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 20px;
+  color: #1a1a18;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
 
-.user .content {
-  white-space: pre-wrap;
-}
-
-.user {
-  color: #1a1a1a;
-}
-
 .assistant {
-  color: #333;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.assistant .content {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 21px;
+  color: #2a2a26;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .toolCallsWrapper {
@@ -41,13 +64,13 @@
 
 .toolCall {
   font-size: 12px;
-  color: #999;
+  color: #9a9a92;
   padding: 1px 0;
 }
 
 .toolSummary {
   font-size: 12px;
-  color: #999;
+  color: #9a9a92;
   cursor: pointer;
   padding: 1px 0;
   -webkit-user-select: none;
@@ -58,7 +81,7 @@
 }
 
 .toolSummary:hover {
-  color: #666;
+  color: #6a6a62;
 }
 
 .caretIcon {
@@ -72,6 +95,7 @@
 
 .interruptedBadge {
   display: inline-block;
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 11px;
   font-weight: 600;
   color: #b45309;

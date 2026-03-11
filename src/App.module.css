@@ -1,78 +1,102 @@
 .header {
-  padding: 12px 20px;
-  border-bottom: 1px solid #e0e0e0;
-  background: #fff;
-  font-weight: 600;
-  font-size: 14px;
-  color: #666;
   display: flex;
   align-items: center;
-  gap: 16px;
+  height: 52px;
+  padding-inline: 24px;
+  border-bottom: 1px solid #e6e6e0;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a18;
+  letter-spacing: -0.02em;
+  line-height: 18px;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: #e6e6e0;
+  flex-shrink: 0;
+  margin: 0 16px;
 }
 
 .docSwitcher {
   display: flex;
   align-items: center;
   gap: 6px;
+  background: #f3f2ee;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+.docSwitcher:hover {
+  background: #ebeae5;
 }
 
 .docSelect {
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 13px;
-  padding: 4px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #fafafa;
-  color: #333;
+  font-weight: 500;
+  color: #1a1a18;
+  line-height: 16px;
+  border: none;
+  background: transparent;
   cursor: pointer;
   outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 0;
 }
 
-.docSelect:focus {
-  border-color: #aaa;
+.chevron {
+  flex-shrink: 0;
+  color: #9a9a92;
 }
 
-.createBtn,
-.copyPathBtn,
-.deleteBtn {
+.spacer {
+  flex: 1;
+}
+
+.headerActions {
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 26px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #fafafa;
-  color: #666;
-  font-size: 13px;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0 8px;
 }
 
-.createBtn:hover,
-.copyPathBtn:hover {
-  background: #eee;
-  color: #333;
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9a9a92;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.iconBtn:hover {
+  background: #f3f2ee;
+  color: #6a6a62;
 }
 
 .deleteBtn:hover {
-  background: #fee;
-  color: #c33;
-  border-color: #dcc;
-}
-
-.modeBadge {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px 7px;
-  border-radius: 4px;
-  background: #f0f0f0;
-  color: #666;
-  text-transform: capitalize;
+  background: #fef2ee;
+  color: #c45a32;
 }
 
 .container {
   display: flex;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: clip;
 }

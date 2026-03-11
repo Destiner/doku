@@ -2,14 +2,14 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e0e0e0;
   position: relative;
+  overflow: clip;
 }
 
 .overlay {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 12px;
+  right: 12px;
   display: flex;
   gap: 4px;
   z-index: 10;
@@ -21,10 +21,10 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #666;
+  border: 1px solid #e6e6e0;
+  border-radius: 6px;
+  background: rgba(250, 250, 248, 0.9);
+  color: #9a9a92;
   font-size: 16px;
   cursor: pointer;
   padding: 0;
@@ -32,17 +32,17 @@
 }
 
 .overlayBtn:hover {
-  background: #eee;
-  color: #333;
+  background: #f3f2ee;
+  color: #6a6a62;
 }
 
 .overlayBtnActive {
-  background: #333;
-  color: #fff;
-  border-color: #333;
+  background: #1a1a18;
+  color: #fafaf8;
+  border-color: #1a1a18;
 }
 
 .overlayBtnActive:hover {
-  background: #444;
-  color: #fff;
+  background: #2a2a26;
+  color: #fafaf8;
 }

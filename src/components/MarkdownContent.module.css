@@ -1,7 +1,9 @@
 .markdown {
-  font-size: 14px;
-  line-height: 1.5;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 21px;
   word-wrap: break-word;
+  color: #2a2a26;
 }
 
 .markdown > *:first-child {
@@ -22,18 +24,19 @@
 .markdown h4 {
   margin: 12px 0 8px;
   font-weight: 600;
+  color: #1a1a18;
 }
 
 .markdown h1 {
-  font-size: 1.4em;
+  font-size: 1.3em;
 }
 
 .markdown h2 {
-  font-size: 1.2em;
+  font-size: 1.15em;
 }
 
 .markdown h3 {
-  font-size: 1.1em;
+  font-size: 1.05em;
 }
 
 .markdown h4 {
@@ -44,23 +47,27 @@
   margin: 8px 0;
   overflow-x: auto;
   border-radius: 6px;
-  background: #f5f5f5;
+  background: #f3f2ee;
 }
 
 .markdown pre > code {
   display: block;
-  padding: 10px 12px;
-  font-size: 13px;
-  line-height: 1.45;
+  padding: 12px 14px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 18px;
+  color: #4a4a44;
   background: none;
   border-radius: 0;
 }
 
 .markdown code {
-  font-size: 13px;
-  background: #f0f0f0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
+  background: #f3f2ee;
   padding: 2px 5px;
   border-radius: 3px;
+  color: #4a4a44;
 }
 
 .tableWrapper {
@@ -80,18 +87,19 @@
 .markdown td {
   padding: 6px 10px;
   text-align: left;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e6e6e0;
 }
 
 .markdown th {
   font-weight: 600;
+  color: #1a1a18;
 }
 
 .markdown blockquote {
   margin: 8px 0;
   padding: 4px 12px;
-  border-left: 3px solid #ddd;
-  color: #666;
+  border-left: 3px solid #e6e6e0;
+  color: #6a6a62;
 }
 
 .markdown ul,
@@ -106,7 +114,7 @@
 
 .markdown hr {
   border: none;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e6e6e0;
   margin: 12px 0;
 }
 

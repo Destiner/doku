@@ -1,7 +1,7 @@
 .container {
   flex: 1;
   overflow: auto;
-  background: #fcfcfc;
+  background: #fafaf8;
 }
 
 .inner {
@@ -16,11 +16,9 @@
 .textarea {
   grid-area: 1 / 1;
   margin: 0;
-  padding: 24px;
+  padding: 56px 0;
   border: none;
-  font-family:
-    ui-monospace, "SF Mono", "Cascadia Code", "Segoe UI Mono", Menlo, Monaco,
-    Consolas, monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 14px;
   line-height: 1.7;
   tab-size: 4;
@@ -33,22 +31,22 @@
 .highlight {
   pointer-events: none;
   z-index: 0;
-  color: #6c7680;
+  color: #6a6a62;
 }
 
 .textarea {
   z-index: 1;
   color: transparent;
-  caret-color: #ff9940;
+  caret-color: #c45a32;
   background: transparent;
   resize: none;
   outline: none;
 }
 
 .textarea::selection {
-  background: rgba(255, 153, 64, 0.15);
+  background: rgba(196, 90, 50, 0.12);
 }
 
 .textarea::placeholder {
-  color: #abb0b6;
+  color: #b5b5ad;
 }

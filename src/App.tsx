@@ -5,6 +5,7 @@ import { useChat } from "./hooks/useChat";
 import { DocPanel } from "./components/DocPanel";
 import { ChatPanel } from "./components/ChatPanel";
 import { EmptyState } from "./components/EmptyState";
+import { Plus, CopySimple, Trash } from "@phosphor-icons/react";
 import styles from "./App.module.css";
 
 type ViewPhase = "compose" | "chat-focused" | "classic";
@@ -74,7 +75,8 @@ export function App() {
   return (
     <>
       <header className={styles.header}>
-        <span>doku</span>
+        <span className={styles.logo}>doku</span>
+        <div className={styles.divider} />
         <div className={styles.docSwitcher}>
           <select
             className={styles.docSelect}
@@ -87,30 +89,47 @@ export function App() {
               </option>
             ))}
           </select>
-          {phase !== "compose" && (
-            <span className={styles.modeBadge}>{activeDocMode}</span>
-          )}
-          <button className={styles.createBtn} onClick={() => createDoc()}>
-            <i className="ph ph-plus" />
-            <span>New</span>
+          <svg
+            className={styles.chevron}
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+          >
+            <path
+              d="M3 4.5L6 7.5L9 4.5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        <div className={styles.spacer} />
+        <div className={styles.headerActions}>
+          <button
+            className={styles.iconBtn}
+            onClick={() => createDoc()}
+            title="New document"
+          >
+            <Plus size={16} />
           </button>
           {activeDoc && (
             <button
-              className={styles.copyPathBtn}
+              className={styles.iconBtn}
               onClick={copyPath}
               title="Copy file path"
             >
-              <i className="ph ph-copy" />
-              <span>Copy Path</span>
+              <CopySimple size={16} />
             </button>
           )}
           {activeDoc && docs.length > 1 && (
             <button
-              className={styles.deleteBtn}
+              className={`${styles.iconBtn} ${styles.deleteBtn}`}
               onClick={() => deleteDoc(activeDoc)}
+              title="Delete document"
             >
-              <i className="ph ph-trash" />
-              <span>Delete</span>
+              <Trash size={16} />
             </button>
           )}
         </div>
