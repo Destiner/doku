@@ -68,11 +68,6 @@ export function ChatMessage({ message, onSubmitAnswers }: Props) {
     <div
       className={`${styles.message} ${isUser ? styles.user : styles.assistant}`}
     >
-      <div
-        className={`${styles.label} ${isUser ? styles.userLabel : styles.assistantLabel}`}
-      >
-        {isUser ? "You" : "Claude Code"}
-      </div>
       {message.segments.map((segment, i) => {
         if (segment.type === "text") {
           if (!segment.content) return null;

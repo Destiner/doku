@@ -9,6 +9,7 @@ interface Props {
   onInput: () => void;
   onToggleMode: () => void;
   onCopyMarkdown: () => void;
+  markdownCopied?: boolean;
 }
 
 export function DocPanel({
@@ -18,12 +19,13 @@ export function DocPanel({
   onInput,
   onToggleMode,
   onCopyMarkdown,
+  markdownCopied,
 }: Props) {
   return (
     <div className={styles.panel}>
       <div className={styles.overlay}>
         <button
-          className={`${styles.overlayBtn} ${mode === "view" ? styles.overlayBtnActive : ""}`}
+          className={styles.overlayBtn}
           onClick={onToggleMode}
           title={
             mode === "edit" ? "Switch to view mode" : "Switch to edit mode"
@@ -38,7 +40,7 @@ export function DocPanel({
           onClick={onCopyMarkdown}
           title="Copy as markdown"
         >
-          <i className="ph ph-clipboard-text" />
+          <i className={markdownCopied ? "ph ph-check" : "ph ph-clipboard-text"} />
         </button>
       </div>
       {mode === "edit" ? (

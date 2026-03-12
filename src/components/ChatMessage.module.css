@@ -2,22 +2,6 @@
   line-height: 1.5;
 }
 
-.label {
-  font-family: "Inter", system-ui, sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  line-height: 14px;
-  margin-bottom: 4px;
-}
-
-.userLabel {
-  color: #9a9a92;
-}
-
-.assistantLabel {
-  color: #c45a32;
-}
 
 .user {
   display: flex;
@@ -34,7 +18,7 @@
   background: #f3f2ee;
   border-radius: 12px 12px 4px 12px;
   padding: 12px 16px;
-  max-width: 340px;
+  max-width: 90%;
   font-family: "Inter", system-ui, sans-serif;
   font-size: 13px;
   line-height: 20px;

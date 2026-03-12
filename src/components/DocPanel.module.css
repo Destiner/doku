@@ -36,13 +36,3 @@
   color: #6a6a62;
 }
 
-.overlayBtnActive {
-  background: #1a1a18;
-  color: #fafaf8;
-  border-color: #1a1a18;
-}
-
-.overlayBtnActive:hover {
-  background: #2a2a26;
-  color: #fafaf8;
-}

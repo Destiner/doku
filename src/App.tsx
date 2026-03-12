@@ -1,11 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useDocs } from "./hooks/useDocs";
 import { useDoc } from "./hooks/useDoc";
 import { useChat } from "./hooks/useChat";
 import { DocPanel } from "./components/DocPanel";
 import { ChatPanel } from "./components/ChatPanel";
 import { EmptyState } from "./components/EmptyState";
-import { Plus, CopySimple, Trash } from "@phosphor-icons/react";
+import { Plus, CopySimple, Check, Trash } from "@phosphor-icons/react";
 import styles from "./App.module.css";
 
 type ViewPhase = "compose" | "chat-focused" | "classic";
@@ -50,6 +50,8 @@ export function App() {
         ? "chat-focused"
         : "classic";
 
+  const [pathCopied, setPathCopied] = useState(false);
+  const pathTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const copyPath = useCallback(() => {
     if (!activeDoc) return;
     const textPromise = fetch(`/api/doc/${encodeURIComponent(activeDoc)}/path`)
@@ -60,15 +62,27 @@ export function App() {
       );
     navigator.clipboard
       .write([new ClipboardItem({ "text/plain": textPromise })])
+      .then(() => {
+        setPathCopied(true);
+        clearTimeout(pathTimerRef.current);
+        pathTimerRef.current = setTimeout(() => setPathCopied(false), 1500);
+      })
       .catch((err) => console.error("Failed to copy path:", err));
   }, [activeDoc]);
 
   const recentDocs = docs.filter((d) => d.id !== activeDoc).slice(0, 3);
 
+  const [mdCopied, setMdCopied] = useState(false);
+  const mdTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const copyMarkdown = useCallback(() => {
     if (!content) return;
     navigator.clipboard
       .writeText(content)
+      .then(() => {
+        setMdCopied(true);
+        clearTimeout(mdTimerRef.current);
+        mdTimerRef.current = setTimeout(() => setMdCopied(false), 1500);
+      })
       .catch((err) => console.error("Failed to copy markdown:", err));
   }, [content]);
 
@@ -120,7 +134,7 @@ export function App() {
               onClick={copyPath}
               title="Copy file path"
             >
-              <CopySimple size={16} />
+              {pathCopied ? <Check size={16} /> : <CopySimple size={16} />}
             </button>
           )}
           {activeDoc && docs.length > 1 && (
@@ -170,6 +184,7 @@ export function App() {
               onInput={handleInput}
               onToggleMode={toggleMode}
               onCopyMarkdown={copyMarkdown}
+              markdownCopied={mdCopied}
             />
             <ChatPanel
               messages={messages}
