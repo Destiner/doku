@@ -11,10 +11,16 @@ export interface DocEntry {
   updatedAt: string;
 }
 
+export interface Ghost {
+  mode: DocMode;
+}
+
 export function useDocs() {
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [activeDoc, setActiveDocState] = useState<string | null>(null);
+  const [ghost, setGhost] = useState<Ghost | null>(null);
   const activeDocRef = useRef<string | null>(null);
+  const materializingRef = useRef<Promise<DocEntry> | null>(null);
   useEffect(() => {
     activeDocRef.current = activeDoc;
   }, [activeDoc]);
@@ -34,6 +40,7 @@ export function useDocs() {
 
   const setActiveDoc = useCallback((id: string | null) => {
     const prevId = activeDocRef.current;
+    if (id) setGhost(null);
     setActiveDocState(id);
     if (id) {
       fetch("/api/last-opened", {
@@ -56,35 +63,44 @@ export function useDocs() {
     }
   }, []);
 
-  const createDoc = useCallback(
-    async (mode?: DocMode) => {
-      try {
-        const res = await fetch("/api/docs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: mode || "planning" }),
-        });
-        const {
-          id,
-          name,
-          mode: docMode,
-        } = (await res.json()) as {
-          id: string;
-          name: string;
-          mode: DocMode;
-        };
-        const now = new Date().toISOString();
-        setDocs((prev) => [
-          { id, name, mode: docMode, createdAt: now, updatedAt: now },
-          ...prev,
-        ]);
-        setActiveDoc(id);
-      } catch (err) {
-        console.error("Failed to create doc:", err);
-      }
-    },
-    [setActiveDoc],
-  );
+  const createGhost = useCallback((mode?: DocMode) => {
+    setGhost({ mode: mode || "planning" });
+    setActiveDocState(null);
+  }, []);
+
+  const materializeGhost = useCallback(async (): Promise<DocEntry> => {
+    if (materializingRef.current) return materializingRef.current;
+
+    const currentGhost = ghost;
+    if (!currentGhost) throw new Error("No ghost to materialize");
+
+    const promise = (async () => {
+      const res = await fetch("/api/docs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: currentGhost.mode }),
+      });
+      const entry = (await res.json()) as {
+        id: string;
+        name: string;
+        mode: DocMode;
+      };
+      const now = new Date().toISOString();
+      const docEntry: DocEntry = {
+        ...entry,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setDocs((prev) => [docEntry, ...prev]);
+      setGhost(null);
+      setActiveDocState(docEntry.id);
+      materializingRef.current = null;
+      return docEntry;
+    })();
+
+    materializingRef.current = promise;
+    return promise;
+  }, [ghost]);
 
   const deleteDoc = useCallback(
     async (id: string) => {
@@ -95,7 +111,12 @@ export function useDocs() {
         setDocs((prev) => {
           const next = prev.filter((d) => d.id !== id);
           if (activeDocRef.current === id) {
-            setActiveDoc(next.length > 0 ? next[0].id : null);
+            if (next.length > 0) {
+              setActiveDoc(next[0].id);
+            } else {
+              setActiveDocState(null);
+              setGhost({ mode: "planning" });
+            }
           }
           return next;
         });
@@ -109,26 +130,7 @@ export function useDocs() {
   useEffect(() => {
     async function init() {
       await fetchDocs();
-      const res = await fetch("/api/docs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "planning" }),
-      });
-      const {
-        id,
-        name,
-        mode: docMode,
-      } = (await res.json()) as {
-        id: string;
-        name: string;
-        mode: DocMode;
-      };
-      const now = new Date().toISOString();
-      setDocs((prev) => [
-        { id, name, mode: docMode, createdAt: now, updatedAt: now },
-        ...prev,
-      ]);
-      setActiveDocState(id);
+      setGhost({ mode: "planning" });
     }
     init();
   }, [fetchDocs]);
@@ -146,13 +148,20 @@ export function useDocs() {
     }).catch((err) => console.error("Failed to update doc mode:", err));
   }, []);
 
+  const updateGhostMode = useCallback((mode: DocMode) => {
+    setGhost((prev) => (prev ? { ...prev, mode } : prev));
+  }, []);
+
   return {
     docs,
     activeDoc,
+    ghost,
     setActiveDoc,
-    createDoc,
+    createGhost,
+    materializeGhost,
     deleteDoc,
     updateDocTitle,
     updateDocMode,
+    updateGhostMode,
   };
 }

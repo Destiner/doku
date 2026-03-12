@@ -116,8 +116,9 @@ export function useChat(
   }, [docId]);
 
   const sendMessage = useCallback(
-    async (prompt: string) => {
-      if (!docId) return;
+    async (prompt: string, overrideDocId?: string) => {
+      const effectiveDocId = overrideDocId || docId;
+      if (!effectiveDocId) return;
       const userMsg: ChatMessage = {
         role: "user",
         segments: [{ type: "text", content: prompt }],
@@ -202,7 +203,7 @@ export function useChat(
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, docId }),
+          body: JSON.stringify({ prompt, docId: effectiveDocId }),
           signal: abortController.signal,
         });
 
@@ -234,9 +235,9 @@ export function useChat(
                 event.type === "title" &&
                 (event as unknown as { title: string }).title
               ) {
-                if (docId && onTitleUpdate) {
+                if (effectiveDocId && onTitleUpdate) {
                   onTitleUpdate(
-                    docId,
+                    effectiveDocId,
                     (event as unknown as { title: string }).title,
                   );
                 }

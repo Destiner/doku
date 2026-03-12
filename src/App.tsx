@@ -14,12 +14,16 @@ export function App() {
   const {
     docs,
     activeDoc,
+    ghost,
     setActiveDoc,
-    createDoc,
+    createGhost,
+    materializeGhost,
     deleteDoc,
     updateDocTitle,
     updateDocMode,
+    updateGhostMode,
   } = useDocs();
+  const isGhost = ghost !== null && activeDoc === null;
   const [mode, setMode] = useState<"edit" | "view">("view");
   const toggleMode = useCallback(() => {
     setMode((m) => (m === "edit" ? "view" : "edit"));
@@ -38,7 +42,28 @@ export function App() {
   } = useChat(activeDoc, updateDocTitle);
 
   const activeDocEntry = docs.find((d) => d.id === activeDoc);
-  const activeDocMode = activeDocEntry?.mode || "planning";
+  const activeDocMode = isGhost
+    ? ghost.mode
+    : activeDocEntry?.mode || "planning";
+
+  const wrappedSendMessage = useCallback(
+    async (prompt: string) => {
+      if (isGhost) {
+        const entry = await materializeGhost();
+        sendMessage(prompt, entry.id);
+        return;
+      }
+      sendMessage(prompt);
+    },
+    [isGhost, materializeGhost, sendMessage],
+  );
+
+  const wrappedHandleInput = useCallback(() => {
+    if (isGhost) {
+      materializeGhost();
+    }
+    handleInput();
+  }, [isGhost, materializeGhost, handleInput]);
 
   const docIsEmpty = !content || content.trim() === "";
   const chatIsEmpty = messages.length === 0 && !isStreaming;
@@ -123,12 +148,12 @@ export function App() {
         <div className={styles.headerActions}>
           <button
             className={styles.iconBtn}
-            onClick={() => createDoc()}
+            onClick={() => createGhost()}
             title="New document"
           >
             <Plus size={16} />
           </button>
-          {activeDoc && (
+          {activeDoc && !isGhost && (
             <button
               className={styles.iconBtn}
               onClick={copyPath}
@@ -137,7 +162,7 @@ export function App() {
               {pathCopied ? <Check size={16} /> : <CopySimple size={16} />}
             </button>
           )}
-          {activeDoc && docs.length > 1 && (
+          {activeDoc && !isGhost && docs.length > 1 && (
             <button
               className={`${styles.iconBtn} ${styles.deleteBtn}`}
               onClick={() => deleteDoc(activeDoc)}
@@ -151,12 +176,13 @@ export function App() {
       <div className={styles.container}>
         {phase === "compose" && (
           <EmptyState
-            onSubmit={sendMessage}
+            onSubmit={wrappedSendMessage}
             recentDocs={recentDocs}
             onNavigateToDoc={setActiveDoc}
             mode={activeDocMode}
             onModeChange={(m) => {
-              if (activeDoc) updateDocMode(activeDoc, m);
+              if (isGhost) updateGhostMode(m);
+              else if (activeDoc) updateDocMode(activeDoc, m);
             }}
             currentDocId={activeDoc}
           />
@@ -165,7 +191,7 @@ export function App() {
           <ChatPanel
             messages={messages}
             isStreaming={isStreaming}
-            sendMessage={sendMessage}
+            sendMessage={wrappedSendMessage}
             abortMessage={abortMessage}
             submitAnswers={submitAnswers}
             queueMessage={queueMessage}
@@ -181,7 +207,7 @@ export function App() {
               mode={mode}
               content={content}
               textareaRef={textareaRef}
-              onInput={handleInput}
+              onInput={wrappedHandleInput}
               onToggleMode={toggleMode}
               onCopyMarkdown={copyMarkdown}
               markdownCopied={mdCopied}
@@ -189,7 +215,7 @@ export function App() {
             <ChatPanel
               messages={messages}
               isStreaming={isStreaming}
-              sendMessage={sendMessage}
+              sendMessage={wrappedSendMessage}
               abortMessage={abortMessage}
               submitAnswers={submitAnswers}
               queueMessage={queueMessage}
