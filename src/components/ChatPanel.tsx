@@ -206,67 +206,133 @@ export function ChatPanel({
         </div>
       )}
       <div className={inputAreaClass}>
-        {atQuery !== null && (
-          <FileSelector
-            query={atQuery}
-            activeIndex={selectorIndex}
-            onActiveIndexChange={setSelectorIndex}
-            onFilesChange={setSelectorFiles}
-            onSelect={handleFileSelect}
-            files={selectorFiles}
-            currentDocId={currentDocId}
-          />
-        )}
-
-        <textarea
-          ref={textareaRef}
-          className={styles.input}
-          placeholder="Ask the agent..."
-          rows={1}
-          value={input}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onKeyUp={handleCursorMove}
-          onClick={handleCursorMove}
-        />
-        <div className={styles.inputFooter}>
-          <div className={styles.modelLabel}>
-            <span className={styles.modelLabelText}>Claude Code</span>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path
-                d="M2.5 3.75L5 6.25L7.5 3.75"
-                stroke="#9A9A92"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        {fullWidth ? (
+          <div className={styles.inputAreaFullWidthInner}>
+            {atQuery !== null && (
+              <FileSelector
+                query={atQuery}
+                activeIndex={selectorIndex}
+                onActiveIndexChange={setSelectorIndex}
+                onFilesChange={setSelectorFiles}
+                onSelect={handleFileSelect}
+                files={selectorFiles}
+                currentDocId={currentDocId}
               />
-            </svg>
+            )}
+            <textarea
+              ref={textareaRef}
+              className={styles.input}
+              placeholder="Ask the agent..."
+              rows={1}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onKeyUp={handleCursorMove}
+              onClick={handleCursorMove}
+            />
+            <div className={styles.inputFooter}>
+              <div className={styles.modelLabel}>
+                <span className={styles.modelLabelText}>Claude Code</span>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path
+                    d="M2.5 3.75L5 6.25L7.5 3.75"
+                    stroke="#9A9A92"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              {isStreaming ? (
+                <button
+                  className={`${styles.sendButton} ${styles.stopButton}`}
+                  onClick={abortMessage}
+                >
+                  <Stop size={14} />
+                </button>
+              ) : (
+                <button
+                  className={styles.sendButton}
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M14 2L7 9M14 2L9.5 14L7 9M14 2L2 6.5L7 9"
+                      stroke="currentColor"
+                      strokeWidth="1.3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
-          {isStreaming ? (
-            <button
-              className={`${styles.sendButton} ${styles.stopButton}`}
-              onClick={abortMessage}
-            >
-              <Stop size={14} />
-            </button>
-          ) : (
-            <button
-              className={styles.sendButton}
-              onClick={handleSend}
-              disabled={!input.trim()}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M14 2L7 9M14 2L9.5 14L7 9M14 2L2 6.5L7 9"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          )}
-        </div>
+        ) : (
+          <>
+            {atQuery !== null && (
+              <FileSelector
+                query={atQuery}
+                activeIndex={selectorIndex}
+                onActiveIndexChange={setSelectorIndex}
+                onFilesChange={setSelectorFiles}
+                onSelect={handleFileSelect}
+                files={selectorFiles}
+                currentDocId={currentDocId}
+              />
+            )}
+            <textarea
+              ref={textareaRef}
+              className={styles.input}
+              placeholder="Ask the agent..."
+              rows={1}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onKeyUp={handleCursorMove}
+              onClick={handleCursorMove}
+            />
+            <div className={styles.inputFooter}>
+              <div className={styles.modelLabel}>
+                <span className={styles.modelLabelText}>Claude Code</span>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path
+                    d="M2.5 3.75L5 6.25L7.5 3.75"
+                    stroke="#9A9A92"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              {isStreaming ? (
+                <button
+                  className={`${styles.sendButton} ${styles.stopButton}`}
+                  onClick={abortMessage}
+                >
+                  <Stop size={14} />
+                </button>
+              ) : (
+                <button
+                  className={styles.sendButton}
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M14 2L7 9M14 2L9.5 14L7 9M14 2L2 6.5L7 9"
+                      stroke="currentColor"
+                      strokeWidth="1.3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

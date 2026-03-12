@@ -10,24 +10,7 @@
   width: auto;
   flex: 1;
   border-left: none;
-}
-
-.messagesFullWidth {
-  max-width: 700px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.inputAreaFullWidth {
-  max-width: 700px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.queueSectionFullWidth {
-  max-width: 700px;
-  margin: 0 auto;
-  width: 100%;
+  position: relative;
 }
 
 .messages {
@@ -39,6 +22,13 @@
   gap: 14px;
 }
 
+.messagesFullWidth {
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: 100px;
+}
+
 .inputArea {
   border-top: 1px solid #e6e6e0;
   flex-shrink: 0;
@@ -47,6 +37,38 @@
   gap: 8px;
   padding: 8px 12px;
   position: relative;
+}
+
+.inputAreaFullWidth {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-top: none;
+  padding: 12px 20px 16px;
+  background: linear-gradient(to top, #fafaf8 70%, transparent);
+  align-items: center;
+}
+
+.inputAreaFullWidthInner {
+  width: 100%;
+  max-width: 700px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.07),
+    0 8px 28px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e0dfd8;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.queueSectionFullWidth {
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .input {
