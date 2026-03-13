@@ -123,8 +123,13 @@ export function App() {
           <select
             className={styles.docSelect}
             value={activeDoc || ""}
-            onChange={(e) => setActiveDoc(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "") createGhost();
+              else setActiveDoc(val);
+            }}
           >
+            {isGhost && <option value="">New document</option>}
             {docs.map((doc) => (
               <option key={doc.id} value={doc.id}>
                 {doc.title || "New Document"}
