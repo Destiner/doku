@@ -900,7 +900,7 @@ process.on("SIGTERM", () => {
   process.exit(0);
 });
 
-if (!isDev) {
+if (HAS_EMBEDDED_ASSETS || !isDev) {
   if (process.platform === "darwin") {
     Bun.spawn(["open", serverUrl]);
   } else if (process.platform === "win32") {
