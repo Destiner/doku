@@ -82,6 +82,7 @@ export function useChat(
   const [messageQueue, setMessageQueue] = useState<string[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const cwdRef = useRef<string | null>(null);
+  const skipNextHistoryLoad = useRef(false);
 
   useEffect(() => {
     fetch("/api/cwd")
@@ -95,6 +96,11 @@ export function useChat(
   useEffect(() => {
     if (!docId) {
       setMessages([]);
+      return;
+    }
+
+    if (skipNextHistoryLoad.current) {
+      skipNextHistoryLoad.current = false;
       return;
     }
 
@@ -119,6 +125,9 @@ export function useChat(
     async (prompt: string, overrideDocId?: string) => {
       const effectiveDocId = overrideDocId || docId;
       if (!effectiveDocId) return;
+      if (overrideDocId) {
+        skipNextHistoryLoad.current = true;
+      }
       const userMsg: ChatMessage = {
         role: "user",
         segments: [{ type: "text", content: prompt }],
