@@ -108,16 +108,23 @@ export function useDocs() {
         await fetch(`/api/doc/${encodeURIComponent(id)}`, {
           method: "DELETE",
         });
-        setDocs((prev) => prev.filter((d) => d.id !== id));
+        const remaining = docs.filter((d) => d.id !== id);
+        setDocs(remaining);
         if (activeDocRef.current === id) {
-          setActiveDocState(null);
-          setGhost({ mode: "planning" });
+          if (remaining.length > 0) {
+            const next = remaining[0];
+            setActiveDocState(next.id);
+            setGhost(null);
+          } else {
+            setActiveDocState(null);
+            setGhost({ mode: "planning" });
+          }
         }
       } catch (err) {
         console.error("Failed to delete doc:", err);
       }
     },
-    [setActiveDoc],
+    [docs],
   );
 
   useEffect(() => {
