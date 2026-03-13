@@ -480,7 +480,8 @@ const server = Bun.serve({
       const needsTitle = !docMeta.title;
 
       const stream = new ReadableStream({
-        async start(controller) {
+        type: "direct",
+        async pull(controller) {
           const encoder = new TextEncoder();
           const reader = proc.stdout.getReader();
           const decoder = new TextDecoder();
@@ -491,7 +492,8 @@ const server = Bun.serve({
           function enqueue(data: Uint8Array) {
             if (closed) return;
             try {
-              controller.enqueue(data);
+              controller.write(data);
+              controller.flush();
             } catch {
               closed = true;
             }
@@ -687,7 +689,8 @@ const server = Bun.serve({
       let closed = false;
 
       const stream = new ReadableStream({
-        start(controller) {
+        type: "direct",
+        pull(controller) {
           const encoder = new TextEncoder();
 
           const interval = setInterval(() => {
@@ -701,9 +704,10 @@ const server = Bun.serve({
                 lastMtime = mtime;
                 const content = storage.getDocContent(docName);
                 if (content !== null) {
-                  controller.enqueue(
+                  controller.write(
                     encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
                   );
+                  controller.flush();
                 }
               }
             } catch {
@@ -717,7 +721,8 @@ const server = Bun.serve({
               return;
             }
             try {
-              controller.enqueue(encoder.encode(": keepalive\n\n"));
+              controller.write(encoder.encode(": keepalive\n\n"));
+              controller.flush();
             } catch {
               closed = true;
               clearInterval(keepalive);
@@ -734,6 +739,8 @@ const server = Bun.serve({
               // already closed
             }
           });
+
+          return new Promise(() => {});
         },
       });
 
