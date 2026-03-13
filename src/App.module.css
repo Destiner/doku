@@ -94,6 +94,10 @@
   color: #c45a32;
 }
 
+.deleteWrapper {
+  position: relative;
+}
+
 .container {
   display: flex;
   flex: 1;

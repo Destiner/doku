@@ -1,0 +1,70 @@
+.popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: #fafaf8;
+  border: 1px solid #e6e6e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 8px 10px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  animation: popIn 0.12s ease-out;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.label {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  color: #6a6a62;
+}
+
+.sep {
+  width: 1px;
+  height: 14px;
+  background: #e6e6e0;
+  flex-shrink: 0;
+}
+
+.deleteBtn,
+.cancelBtn {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  line-height: 16px;
+  background: transparent;
+}
+
+.deleteBtn {
+  color: #c45a32;
+}
+
+.deleteBtn:hover {
+  background: #fef2ee;
+}
+
+.cancelBtn {
+  color: #9a9a92;
+}
+
+.cancelBtn:hover {
+  color: #6a6a62;
+}

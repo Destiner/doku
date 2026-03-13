@@ -6,6 +6,7 @@ import { DocPanel } from "./components/DocPanel";
 import { ChatPanel } from "./components/ChatPanel";
 import { EmptyState } from "./components/EmptyState";
 import { Plus, CopySimple, Check, Trash } from "@phosphor-icons/react";
+import { DeleteConfirm } from "./components/DeleteConfirm";
 import styles from "./App.module.css";
 
 type ViewPhase = "compose" | "chat-focused" | "classic";
@@ -95,6 +96,8 @@ export function App() {
       .catch((err) => console.error("Failed to copy path:", err));
   }, [activeDoc]);
 
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
   const recentDocs = docs.filter((d) => d.id !== activeDoc).slice(0, 3);
 
   const [mdCopied, setMdCopied] = useState(false);
@@ -163,13 +166,24 @@ export function App() {
             </button>
           )}
           {activeDoc && !isGhost && docs.length > 1 && (
-            <button
-              className={`${styles.iconBtn} ${styles.deleteBtn}`}
-              onClick={() => deleteDoc(activeDoc)}
-              title="Delete document"
-            >
-              <Trash size={16} />
-            </button>
+            <div className={styles.deleteWrapper}>
+              <button
+                className={`${styles.iconBtn} ${styles.deleteBtn}`}
+                onClick={() => setConfirmingDelete(true)}
+                title="Delete document"
+              >
+                <Trash size={16} />
+              </button>
+              {confirmingDelete && (
+                <DeleteConfirm
+                  onConfirm={() => {
+                    deleteDoc(activeDoc);
+                    setConfirmingDelete(false);
+                  }}
+                  onCancel={() => setConfirmingDelete(false)}
+                />
+              )}
+            </div>
           )}
         </div>
       </header>
