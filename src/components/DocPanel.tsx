@@ -40,7 +40,9 @@ export function DocPanel({
           onClick={onCopyMarkdown}
           title="Copy as markdown"
         >
-          <i className={markdownCopied ? "ph ph-check" : "ph ph-clipboard-text"} />
+          <i
+            className={markdownCopied ? "ph ph-check" : "ph ph-clipboard-text"}
+          />
         </button>
       </div>
       {mode === "edit" ? (

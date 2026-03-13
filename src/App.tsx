@@ -77,7 +77,7 @@ export function App() {
         : "classic";
 
   const [pathCopied, setPathCopied] = useState(false);
-  const pathTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const pathTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const copyPath = useCallback(() => {
     if (!activeDoc) return;
     const textPromise = fetch(`/api/doc/${encodeURIComponent(activeDoc)}/path`)
@@ -101,7 +101,7 @@ export function App() {
   const recentDocs = docs.filter((d) => d.id !== activeDoc).slice(0, 3);
 
   const [mdCopied, setMdCopied] = useState(false);
-  const mdTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const mdTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const copyMarkdown = useCallback(() => {
     if (!content) return;
     navigator.clipboard
