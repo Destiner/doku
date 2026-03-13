@@ -900,11 +900,12 @@ process.on("SIGTERM", () => {
   process.exit(0);
 });
 
-const openUrl = isDev ? "http://localhost:51738" : serverUrl;
-if (process.platform === "darwin") {
-  Bun.spawn(["open", openUrl]);
-} else if (process.platform === "win32") {
-  Bun.spawn(["cmd", "/c", "start", "", openUrl]);
-} else {
-  Bun.spawn(["xdg-open", openUrl]);
+if (!isDev) {
+  if (process.platform === "darwin") {
+    Bun.spawn(["open", serverUrl]);
+  } else if (process.platform === "win32") {
+    Bun.spawn(["cmd", "/c", "start", "", serverUrl]);
+  } else {
+    Bun.spawn(["xdg-open", serverUrl]);
+  }
 }

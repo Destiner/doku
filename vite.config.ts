@@ -12,6 +12,7 @@ export default defineConfig({
   customLogger: logger,
   plugins: [react()],
   server: {
+    open: true,
     port: 51738,
     proxy: {
       "/api": {
