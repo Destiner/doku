@@ -165,7 +165,7 @@ export function App() {
               {pathCopied ? <Check size={16} /> : <CopySimple size={16} />}
             </button>
           )}
-          {activeDoc && !isGhost && docs.length > 1 && (
+          {activeDoc && !isGhost && (
             <div className={styles.deleteWrapper}>
               <button
                 className={`${styles.iconBtn} ${styles.deleteBtn}`}
