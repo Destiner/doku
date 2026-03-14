@@ -8,6 +8,12 @@ Document editor with an integrated Claude Code chat panel.
 - `bun run build` - Build frontend to `dist/`
 - `bun run start` - Start production server (serves frontend from `dist/`)
 
+## Quality checks
+
+- `bun run typecheck` - Type check frontend and server (`tsc --noEmit` for both tsconfigs)
+- `bun run lint` - Lint and auto-fix with ESLint
+- `bun run format` - Format with Prettier
+
 ## Stack
 
 - Runtime: Bun
