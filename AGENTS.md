@@ -17,8 +17,11 @@ Document editor with an integrated Claude Code chat panel.
 
 ## Structure
 
-- `server.ts` - Bun HTTP server: multi-doc CRUD API, file watcher (SSE), chat proxy, and production static serving from `dist/`
-- `storage.ts` - Storage utilities: project dir resolution, doc name generation, metadata management
+- `server/` - Backend: Bun HTTP server, Claude Code harness, storage layer
+  - `index.ts` - HTTP server: multi-doc CRUD API, file watcher (SSE), chat proxy, and production static serving from `dist/`
+  - `harness.ts` - Claude Code CLI subprocess wrapper
+  - `storage.ts` - Storage utilities: project dir resolution, doc name generation, metadata management
+  - `storage-provider.ts` - Storage provider abstraction (filesystem and ephemeral)
 - `src/` - React frontend (components, hooks, utils)
 
 ## Storage

@@ -9,12 +9,12 @@ import {
   EphemeralStorage,
   generateDocId,
 } from "./storage-provider";
-import { describeToolCall, generateToolSummary } from "./src/utils/toolCalls";
+import { describeToolCall, generateToolSummary } from "../src/utils/toolCalls";
 import { buildClaudeCommand } from "./harness";
 let embeddedAssetPaths: Record<string, string> = {};
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  embeddedAssetPaths = require("./_assets.gen").assets;
+  embeddedAssetPaths = require("../_assets.gen").assets;
 } catch {
   // Dev mode: _assets.gen.ts may reference stale/missing dist files
 }

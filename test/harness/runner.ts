@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync, cpSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { runHarness } from "../../harness";
+import { runHarness } from "../../server/harness";
 import { runAssertion, takeSnapshot } from "./assertions";
 import type { TestCase, TestCaseResult } from "./types";
 

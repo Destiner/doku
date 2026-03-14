@@ -85,7 +85,7 @@ for (const { bunTarget, pkg, os, cpu } of TARGETS) {
       "build",
       "--compile",
       `--target=${bunTarget}`,
-      "server.ts",
+      "server/index.ts",
       "--outfile",
       `${outDir}/bin/doku`,
     ],

@@ -1,5 +1,5 @@
-import type { DocMode } from "../../storage";
-import type { HarnessResult } from "../../harness";
+import type { DocMode } from "../../server/storage";
+import type { HarnessResult } from "../../server/harness";
 
 export interface TestCase {
   name: string;

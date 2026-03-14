@@ -35,7 +35,7 @@ writeFileSync(OUT, code);
 console.log(`Generated ${OUT} with ${files.length} assets`);
 
 const proc = Bun.spawnSync(
-  ["bun", "build", "--compile", "server.ts", "--outfile", "doku"],
+  ["bun", "build", "--compile", "server/index.ts", "--outfile", "doku"],
   { stdout: "inherit", stderr: "inherit" },
 );
 process.exit(proc.exitCode);
