@@ -1,5 +1,5 @@
 import { spawn } from "bun";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import type { DocMode } from "./storage";
 
 export interface HarnessInput {
@@ -24,9 +24,9 @@ export interface HarnessResult {
 
 function buildSystemPrompt(mode: DocMode, docPath: string): string {
   const prompts: Record<string, string> = {
-    planning: `You are used exclusively for planning. Your role is to help the user think through ideas, draft plans, and write specs—all by editing a shared document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nAlways write plans, research, and proposals directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.\nPrefer using mermaid diagrams where makes sense.`,
-    research: `Your role is to investigate topics, synthesize findings, and write research reports by editing a shared document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nYou have web tools (WebSearch, WebFetch) available for internet research, but codebase research is equally valid—not all research requires the web.\nAlways write findings and analysis directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.\nPrefer using mermaid diagrams where makes sense.`,
-    general: `Write to the document.\nThe document is at: ${docPath}\nUse your Read, Edit, and Write tools to view and modify this file when the user asks you to read or change the document.\nAlways write directly into the document—never as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.\nPrefer using mermaid diagrams where makes sense.`,
+    planning: `You are a planning assistant. You help the user think through ideas, draft plans, and write specs.\nThe shared document is at: ${docPath}\nTo read the current document state, use Read("${docPath}").\nTo write or update the document, use ExitPlanMode with the full document content in the "plan" parameter.\nDo NOT use Edit or Write on the document file directly — always go through ExitPlanMode.\nAlways express plans, research, and proposals through ExitPlanMode — not as chat-only messages.\nThe document is the artifact; chat is for clarifications and brief summaries.\nPrefer using mermaid diagrams where it makes sense.`,
+    research: `Your role is to investigate topics, synthesize findings, and write research reports.\nThe shared document is at: ${docPath}\nTo read the current document state, use Read("${docPath}").\nTo write or update the document, use ExitPlanMode with the full document content in the "plan" parameter.\nDo NOT use Edit or Write on the document file directly — always go through ExitPlanMode.\nYou have web tools (WebSearch, WebFetch) available for internet research, but codebase research is equally valid—not all research requires the web.\nAlways write findings and analysis through ExitPlanMode — not as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.\nPrefer using mermaid diagrams where it makes sense.`,
+    general: `Write to the document.\nThe shared document is at: ${docPath}\nTo read the current document state, use Read("${docPath}").\nTo write or update the document, use ExitPlanMode with the full document content in the "plan" parameter.\nDo NOT use Edit or Write on the document file directly — always go through ExitPlanMode.\nAlways write through ExitPlanMode — not as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.\nPrefer using mermaid diagrams where it makes sense.`,
   };
   return prompts[mode] || prompts.planning;
 }
@@ -38,10 +38,14 @@ export function buildClaudeCommand(input: HarnessInput): string[] {
     "--output-format",
     "stream-json",
     "--verbose",
-    "--dangerously-skip-permissions",
-    "--disallowed-tools",
-    "EnterPlanMode",
-    "ExitPlanMode",
+    "--permission-mode",
+    "plan",
+    "--allowed-tools",
+    "Read",
+    "Glob",
+    "Grep",
+    "WebSearch",
+    "WebFetch",
   ];
 
   if (input.sessionId) {
@@ -101,7 +105,11 @@ export async function runHarness(input: HarnessInput): Promise<HarnessResult> {
     // stream-json format: tool_use blocks are nested in assistant message content
     if (event.type === "assistant" && event.message) {
       const msg = event.message as {
-        content?: Array<{ type: string; name?: string }>;
+        content?: Array<{
+          type: string;
+          name?: string;
+          input?: Record<string, unknown>;
+        }>;
       };
       if (Array.isArray(msg.content)) {
         for (const block of msg.content) {
@@ -111,6 +119,14 @@ export async function runHarness(input: HarnessInput): Promise<HarnessResult> {
             !toolsUsed.includes(block.name)
           ) {
             toolsUsed.push(block.name);
+          }
+
+          // Intercept ExitPlanMode: write plan content to doc file
+          if (block.type === "tool_use" && block.name === "ExitPlanMode") {
+            const planInput = block.input as { plan?: string } | undefined;
+            if (planInput?.plan) {
+              writeFileSync(input.docPath, planInput.plan, "utf-8");
+            }
           }
         }
       }

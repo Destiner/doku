@@ -1,5 +1,11 @@
 import { spawn } from "bun";
-import { existsSync, readFileSync, statSync, readdirSync } from "fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  statSync,
+  readdirSync,
+} from "fs";
 import { join, resolve, extname, relative } from "path";
 import { homedir } from "os";
 import { encodeProjectPath, getActiveSessionId } from "./storage";
@@ -247,6 +253,16 @@ function parseChatHistory(sessionId: string): ChatMessage[] {
         }
 
         if (block.type === "tool_use" && block.name) {
+          // Hide ExitPlanMode and plan-dir Write from chat history
+          if (block.name === "ExitPlanMode") continue;
+          if (
+            block.name === "Write" &&
+            typeof block.input?.file_path === "string" &&
+            block.input.file_path.includes("/.claude/plans/")
+          ) {
+            continue;
+          }
+
           const { label, detail } = describeToolCall(
             block.name,
             block.input || {},
@@ -574,6 +590,10 @@ const server = Bun.serve({
 
           // When true, suppress all remaining events (after AskUserQuestion)
           let suppressAfterAskUser = false;
+          // When true, suppress events after ExitPlanMode (denial error + follow-up text)
+          let suppressAfterExitPlan = false;
+          // Tool IDs to suppress tool_result events for (e.g. Write to plans dir)
+          const suppressedToolIds = new Set<string>();
 
           function processEvent(event: Record<string, unknown>) {
             if (event.type === "error") console.error(`[chat] error:`, event);
@@ -581,12 +601,27 @@ const server = Bun.serve({
             captureSession(event);
 
             if (suppressAfterAskUser) return;
+            if (suppressAfterExitPlan) return;
+
+            // Suppress tool_result events for suppressed tool IDs
+            if (event.type === "tool_result") {
+              const toolUseId = event.tool_use_id as string | undefined;
+              if (toolUseId && suppressedToolIds.has(toolUseId)) {
+                suppressedToolIds.delete(toolUseId);
+                return;
+              }
+            }
 
             // Detect AskUserQuestion in assistant message content blocks
             if (event.type === "assistant") {
               const msg = event.message as
                 | {
-                    content?: Array<{ type: string; name?: string }>;
+                    content?: Array<{
+                      type: string;
+                      name?: string;
+                      id?: string;
+                      input?: Record<string, unknown>;
+                    }>;
                   }
                 | undefined;
               if (Array.isArray(msg?.content)) {
@@ -595,10 +630,48 @@ const server = Bun.serve({
                     block.type === "tool_use" &&
                     block.name === "AskUserQuestion"
                   ) {
-                    // Suppress this event and all further events
-                    // (the CLI will auto-deny the tool and Claude will respond
-                    // about the denial — we don't want that shown to the user)
                     suppressAfterAskUser = true;
+                    return;
+                  }
+
+                  // Suppress Write to ~/.claude/plans/ (plan file write before ExitPlanMode)
+                  if (
+                    block.type === "tool_use" &&
+                    block.name === "Write" &&
+                    typeof (block as { input?: { file_path?: string } }).input
+                      ?.file_path === "string" &&
+                    (
+                      block as { input: { file_path: string } }
+                    ).input.file_path.includes("/.claude/plans/")
+                  ) {
+                    if (block.id) suppressedToolIds.add(block.id);
+                    return;
+                  }
+
+                  // Intercept ExitPlanMode: extract plan content, write to doc, suppress
+                  if (
+                    block.type === "tool_use" &&
+                    block.name === "ExitPlanMode"
+                  ) {
+                    const input = block.input as
+                      | { plan?: string; planFilePath?: string }
+                      | undefined;
+                    if (input?.plan) {
+                      try {
+                        writeFileSync(docPath, input.plan, "utf-8");
+                        console.log(
+                          `[chat] ExitPlanMode: wrote ${input.plan.length} chars to ${docPath}`,
+                        );
+                      } catch (err) {
+                        console.error(
+                          `[chat] ExitPlanMode: failed to write doc:`,
+                          err,
+                        );
+                      }
+                    }
+                    // Suppress this event and all subsequent events
+                    // (the denial error + Claude's follow-up text about the denial)
+                    suppressAfterExitPlan = true;
                     return;
                   }
                 }
