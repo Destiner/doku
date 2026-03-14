@@ -59,6 +59,7 @@ export function EmptyState({
     handleCursorMove,
     handleFileSelect,
     handleKeyDown,
+    handleBlur,
     clearInput,
   } = useAtMention();
 
@@ -122,6 +123,7 @@ export function EmptyState({
             onKeyDown={onKeyDown}
             onKeyUp={handleCursorMove}
             onClick={handleCursorMove}
+            onBlur={handleBlur}
           />
           <div className={styles.inputFooter}>
             <ModelSelector />

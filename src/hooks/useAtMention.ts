@@ -87,6 +87,10 @@ export function useAtMention() {
     return false;
   }
 
+  function handleBlur() {
+    setAtQuery(null);
+  }
+
   function clearInput() {
     setInput("");
     setAtQuery(null);
@@ -105,6 +109,7 @@ export function useAtMention() {
     handleCursorMove,
     handleFileSelect,
     handleKeyDown,
+    handleBlur,
     clearInput,
   };
 }

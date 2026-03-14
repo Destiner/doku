@@ -4,7 +4,7 @@ import styles from "./FileSelector.module.css";
 interface SelectorItem {
   label: string;
   value: string;
-  kind: "file" | "plan";
+  kind: "file" | "doc";
 }
 
 interface Props {
@@ -63,15 +63,15 @@ export function FileSelector({
 
     Promise.all([filesFetch, docsFetch]).then(([fileResults, docResults]) => {
       const combined: SelectorItem[] = [
-        ...docResults.map((d) => ({
-          label: d.label,
-          value: d.path,
-          kind: "plan" as const,
-        })),
         ...fileResults.map((f) => ({
           label: f,
           value: f,
           kind: "file" as const,
+        })),
+        ...docResults.map((d) => ({
+          label: d.label,
+          value: d.path,
+          kind: "doc" as const,
         })),
       ];
       setItems(combined);
@@ -100,7 +100,7 @@ export function FileSelector({
           }}
         >
           <span className={styles.itemKind}>
-            {item.kind === "plan" ? "plan" : "file"}
+            {item.kind === "doc" ? "doc" : "file"}
           </span>
           {item.label}
         </div>

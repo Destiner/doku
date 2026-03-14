@@ -44,6 +44,7 @@ export function ChatPanel({
     handleCursorMove,
     handleFileSelect,
     handleKeyDown,
+    handleBlur,
     clearInput,
   } = useAtMention();
 
@@ -116,6 +117,7 @@ export function ChatPanel({
       onKeyDown={onKeyDown}
       onKeyUp={handleCursorMove}
       onClick={handleCursorMove}
+      onBlur={handleBlur}
     />
   );
 
