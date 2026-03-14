@@ -18,9 +18,14 @@
   line-height: 16px;
 }
 
-.trigger:hover {
+.trigger:hover:not(.triggerDisabled) {
   background: #f3f2ee;
   color: #6a6a62;
+}
+
+.triggerDisabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .label {

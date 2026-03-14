@@ -7,7 +7,11 @@ function preventFocusSteal(e: React.MouseEvent) {
   e.preventDefault();
 }
 
-export function ModelSelector() {
+interface ModelSelectorProps {
+  disabled?: boolean;
+}
+
+export function ModelSelector({ disabled }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -25,8 +29,8 @@ export function ModelSelector() {
   return (
     <div className={styles.wrapper} ref={ref}>
       <button
-        className={styles.trigger}
-        onClick={() => setOpen((o) => !o)}
+        className={`${styles.trigger} ${disabled ? styles.triggerDisabled : ""}`}
+        onClick={() => !disabled && setOpen((o) => !o)}
         onMouseDown={preventFocusSteal}
         type="button"
       >

@@ -123,7 +123,7 @@ export function ChatPanel({
 
   const footerEl = (
     <div className={styles.inputFooter}>
-      <ModelSelector />
+      <ModelSelector disabled={messages.length > 0} />
       {isStreaming ? (
         <button
           className={`${styles.sendButton} ${styles.stopButton}`}
