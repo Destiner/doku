@@ -176,7 +176,7 @@ export function ChatPanel({
         )}
         <div ref={sentinelRef} />
       </div>
-      {messageQueue.length > 0 && (
+      {!fullWidth && messageQueue.length > 0 && (
         <div className={queueSectionClass}>
           <div
             className={styles.queueHeader}
@@ -207,7 +207,37 @@ export function ChatPanel({
       )}
       <div className={inputAreaClass}>
         {fullWidth ? (
-          <div className={styles.inputAreaFullWidthInner}>
+          <>
+            {messageQueue.length > 0 && (
+              <div className={styles.queueSectionFloating}>
+                <div
+                  className={styles.queueHeader}
+                  onClick={() => setQueueCollapsed((c) => !c)}
+                >
+                  <i
+                    className={`ph ph-caret-right ${styles.queueCaret} ${!queueCollapsed ? styles.queueCaretExpanded : ""}`}
+                  />
+                  {messageQueue.length} queued message
+                  {messageQueue.length !== 1 ? "s" : ""}
+                </div>
+                {!queueCollapsed && (
+                  <div className={styles.queueList}>
+                    {messageQueue.map((msg, i) => (
+                      <div key={i} className={styles.queueItem}>
+                        <span className={styles.queueItemText}>{msg}</span>
+                        <button
+                          className={styles.queueItemRemove}
+                          onClick={() => removeQueuedMessage(i)}
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className={styles.inputAreaFullWidthInner}>
             {atQuery !== null && (
               <FileSelector
                 query={atQuery}
@@ -269,6 +299,7 @@ export function ChatPanel({
               )}
             </div>
           </div>
+          </>
         ) : (
           <>
             {atQuery !== null && (

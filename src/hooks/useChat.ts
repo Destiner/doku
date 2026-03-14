@@ -83,6 +83,9 @@ export function useChat(
   const abortControllerRef = useRef<AbortController | null>(null);
   const cwdRef = useRef<string | null>(null);
   const skipNextHistoryLoad = useRef(false);
+  const sendMessageRef = useRef<
+    (prompt: string, overrideDocId?: string) => Promise<void>
+  >(null!);
 
   useEffect(() => {
     fetch("/api/cwd")
@@ -403,7 +406,7 @@ export function useChat(
           if (queue.length > 0) {
             const combined = queue.join("\n\n");
             // Schedule sendMessage on next tick to avoid state conflicts
-            setTimeout(() => sendMessage(combined), 0);
+            setTimeout(() => sendMessageRef.current(combined), 0);
             return [];
           }
           return queue;
@@ -412,6 +415,8 @@ export function useChat(
     },
     [docId, onTitleUpdate],
   );
+
+  sendMessageRef.current = sendMessage;
 
   const queueMessage = useCallback((prompt: string) => {
     setMessageQueue((prev) => [...prev, prompt]);
