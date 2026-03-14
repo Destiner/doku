@@ -499,8 +499,9 @@ const server = Bun.serve({
             }
           }
 
+          let titlePromise: Promise<void> | null = null;
           if (needsTitle) {
-            (async () => {
+            titlePromise = (async () => {
               try {
                 const titleEnv = { ...process.env };
                 delete titleEnv.CLAUDECODE;
@@ -652,10 +653,13 @@ const server = Bun.serve({
               const exitCode = await proc.exited;
               activeProcesses.delete(docId);
               console.log(`[chat] claude exited with code ${exitCode}`);
-              enqueue(encoder.encode("data: [DONE]\n\n"));
             } catch (err) {
               console.error(`[chat] exit error: ${err}`);
             }
+            if (titlePromise) {
+              await titlePromise;
+            }
+            enqueue(encoder.encode("data: [DONE]\n\n"));
             if (!closed) {
               try {
                 controller.close();
