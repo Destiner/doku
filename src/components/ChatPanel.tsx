@@ -1,8 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Stop, X } from "@phosphor-icons/react";
 import { ChatMessage as ChatMessageType } from "../hooks/useChat";
+import { useAtMention } from "../hooks/useAtMention";
 import { ChatMessage } from "./ChatMessage";
 import { FileSelector } from "./FileSelector";
+import { ModelSelector } from "./ModelSelector";
 import styles from "./ChatPanel.module.css";
 
 interface Props {
@@ -18,15 +20,6 @@ interface Props {
   currentDocId?: string | null;
 }
 
-function detectAtQuery(text: string, cursorPos: number): string | null {
-  const before = text.slice(0, cursorPos);
-  const atIdx = before.lastIndexOf("@");
-  if (atIdx === -1) return null;
-  const query = before.slice(atIdx + 1);
-  if (/[\s\n]/.test(query)) return null;
-  return query;
-}
-
 export function ChatPanel({
   messages,
   isStreaming,
@@ -39,15 +32,23 @@ export function ChatPanel({
   fullWidth,
   currentDocId,
 }: Props) {
-  const [input, setInput] = useState("");
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const cursorPosRef = useRef(0);
+  const {
+    input,
+    textareaRef,
+    atQuery,
+    selectorFiles,
+    selectorIndex,
+    setSelectorFiles,
+    setSelectorIndex,
+    handleInputChange,
+    handleCursorMove,
+    handleFileSelect,
+    handleKeyDown,
+    clearInput,
+  } = useAtMention();
 
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [queueCollapsed, setQueueCollapsed] = useState(false);
-  const [atQuery, setAtQuery] = useState<string | null>(null);
-  const [selectorFiles, setSelectorFiles] = useState<string[]>([]);
-  const [selectorIndex, setSelectorIndex] = useState(0);
 
   useEffect(() => {
     sentinelRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -59,13 +60,12 @@ export function ChatPanel({
     ta.style.height = "auto";
     const border = ta.offsetHeight - ta.clientHeight;
     ta.style.height = ta.scrollHeight + border + "px";
-  }, [input]);
+  }, [input, textareaRef]);
 
   function handleSend() {
     const prompt = input.trim();
     if (!prompt) return;
-    setInput("");
-    setAtQuery(null);
+    clearInput();
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -76,67 +76,8 @@ export function ChatPanel({
     }
   }
 
-  function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    const val = e.target.value;
-    setInput(val);
-    const pos = e.target.selectionStart ?? val.length;
-    cursorPosRef.current = pos;
-    setAtQuery(detectAtQuery(val, pos));
-  }
-
-  const handleCursorMove = useCallback(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const pos = ta.selectionStart ?? 0;
-    cursorPosRef.current = pos;
-    setAtQuery(detectAtQuery(input, pos));
-  }, [input]);
-
-  function handleFileSelect(file: string) {
-    const pos = cursorPosRef.current;
-    const before = input.slice(0, pos);
-    const atIdx = before.lastIndexOf("@");
-    if (atIdx === -1) return;
-    const after = input.slice(pos);
-    const newInput = before.slice(0, atIdx) + "@" + file + " " + after;
-    setInput(newInput);
-    setAtQuery(null);
-    const newCursor = atIdx + 1 + file.length + 1;
-    cursorPosRef.current = newCursor;
-    requestAnimationFrame(() => {
-      textareaRef.current?.setSelectionRange(newCursor, newCursor);
-      textareaRef.current?.focus();
-    });
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (atQuery !== null && selectorFiles.length > 0) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectorIndex((i) => Math.min(i + 1, selectorFiles.length - 1));
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectorIndex((i) => Math.max(i - 1, 0));
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleFileSelect(selectorFiles[selectorIndex]);
-        return;
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setAtQuery(null);
-        return;
-      }
-    }
-
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  function onKeyDown(e: React.KeyboardEvent) {
+    handleKeyDown(e, handleSend);
   }
 
   const panelClass = fullWidth
@@ -151,6 +92,92 @@ export function ChatPanel({
   const queueSectionClass = fullWidth
     ? `${styles.queueSection} ${styles.queueSectionFullWidth}`
     : styles.queueSection;
+
+  const fileSelectorEl = atQuery !== null && (
+    <FileSelector
+      query={atQuery}
+      activeIndex={selectorIndex}
+      onActiveIndexChange={setSelectorIndex}
+      onFilesChange={setSelectorFiles}
+      onSelect={handleFileSelect}
+      files={selectorFiles}
+      currentDocId={currentDocId}
+    />
+  );
+
+  const textareaEl = (
+    <textarea
+      ref={textareaRef}
+      className={styles.input}
+      placeholder="Ask the agent..."
+      rows={1}
+      value={input}
+      onChange={handleInputChange}
+      onKeyDown={onKeyDown}
+      onKeyUp={handleCursorMove}
+      onClick={handleCursorMove}
+    />
+  );
+
+  const footerEl = (
+    <div className={styles.inputFooter}>
+      <ModelSelector />
+      {isStreaming ? (
+        <button
+          className={`${styles.sendButton} ${styles.stopButton}`}
+          onClick={abortMessage}
+        >
+          <Stop size={14} />
+        </button>
+      ) : (
+        <button
+          className={styles.sendButton}
+          onClick={handleSend}
+          disabled={!input.trim()}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M14 2L7 9M14 2L9.5 14L7 9M14 2L2 6.5L7 9"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+
+  const queueEl = messageQueue.length > 0 && (
+    <>
+      <div
+        className={styles.queueHeader}
+        onClick={() => setQueueCollapsed((c) => !c)}
+      >
+        <i
+          className={`ph ph-caret-right ${styles.queueCaret} ${!queueCollapsed ? styles.queueCaretExpanded : ""}`}
+        />
+        {messageQueue.length} queued message
+        {messageQueue.length !== 1 ? "s" : ""}
+      </div>
+      {!queueCollapsed && (
+        <div className={styles.queueList}>
+          {messageQueue.map((msg, i) => (
+            <div key={i} className={styles.queueItem}>
+              <span className={styles.queueItemText}>{msg}</span>
+              <button
+                className={styles.queueItemRemove}
+                onClick={() => removeQueuedMessage(i)}
+              >
+                <X size={10} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className={panelClass}>
@@ -177,191 +204,25 @@ export function ChatPanel({
         <div ref={sentinelRef} />
       </div>
       {!fullWidth && messageQueue.length > 0 && (
-        <div className={queueSectionClass}>
-          <div
-            className={styles.queueHeader}
-            onClick={() => setQueueCollapsed((c) => !c)}
-          >
-            <i
-              className={`ph ph-caret-right ${styles.queueCaret} ${!queueCollapsed ? styles.queueCaretExpanded : ""}`}
-            />
-            {messageQueue.length} queued message
-            {messageQueue.length !== 1 ? "s" : ""}
-          </div>
-          {!queueCollapsed && (
-            <div className={styles.queueList}>
-              {messageQueue.map((msg, i) => (
-                <div key={i} className={styles.queueItem}>
-                  <span className={styles.queueItemText}>{msg}</span>
-                  <button
-                    className={styles.queueItemRemove}
-                    onClick={() => removeQueuedMessage(i)}
-                  >
-                    <X size={10} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <div className={queueSectionClass}>{queueEl}</div>
       )}
       <div className={inputAreaClass}>
         {fullWidth ? (
           <>
             {messageQueue.length > 0 && (
-              <div className={styles.queueSectionFloating}>
-                <div
-                  className={styles.queueHeader}
-                  onClick={() => setQueueCollapsed((c) => !c)}
-                >
-                  <i
-                    className={`ph ph-caret-right ${styles.queueCaret} ${!queueCollapsed ? styles.queueCaretExpanded : ""}`}
-                  />
-                  {messageQueue.length} queued message
-                  {messageQueue.length !== 1 ? "s" : ""}
-                </div>
-                {!queueCollapsed && (
-                  <div className={styles.queueList}>
-                    {messageQueue.map((msg, i) => (
-                      <div key={i} className={styles.queueItem}>
-                        <span className={styles.queueItemText}>{msg}</span>
-                        <button
-                          className={styles.queueItemRemove}
-                          onClick={() => removeQueuedMessage(i)}
-                        >
-                          <X size={10} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <div className={styles.queueSectionFloating}>{queueEl}</div>
             )}
             <div className={styles.inputAreaFullWidthInner}>
-            {atQuery !== null && (
-              <FileSelector
-                query={atQuery}
-                activeIndex={selectorIndex}
-                onActiveIndexChange={setSelectorIndex}
-                onFilesChange={setSelectorFiles}
-                onSelect={handleFileSelect}
-                files={selectorFiles}
-                currentDocId={currentDocId}
-              />
-            )}
-            <textarea
-              ref={textareaRef}
-              className={styles.input}
-              placeholder="Ask the agent..."
-              rows={1}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              onKeyUp={handleCursorMove}
-              onClick={handleCursorMove}
-            />
-            <div className={styles.inputFooter}>
-              <div className={styles.modelLabel}>
-                <span className={styles.modelLabelText}>Claude Code</span>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path
-                    d="M2.5 3.75L5 6.25L7.5 3.75"
-                    stroke="#9A9A92"
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              {isStreaming ? (
-                <button
-                  className={`${styles.sendButton} ${styles.stopButton}`}
-                  onClick={abortMessage}
-                >
-                  <Stop size={14} />
-                </button>
-              ) : (
-                <button
-                  className={styles.sendButton}
-                  onClick={handleSend}
-                  disabled={!input.trim()}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path
-                      d="M14 2L7 9M14 2L9.5 14L7 9M14 2L2 6.5L7 9"
-                      stroke="currentColor"
-                      strokeWidth="1.3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              )}
+              {fileSelectorEl}
+              {textareaEl}
+              {footerEl}
             </div>
-          </div>
           </>
         ) : (
           <>
-            {atQuery !== null && (
-              <FileSelector
-                query={atQuery}
-                activeIndex={selectorIndex}
-                onActiveIndexChange={setSelectorIndex}
-                onFilesChange={setSelectorFiles}
-                onSelect={handleFileSelect}
-                files={selectorFiles}
-                currentDocId={currentDocId}
-              />
-            )}
-            <textarea
-              ref={textareaRef}
-              className={styles.input}
-              placeholder="Ask the agent..."
-              rows={1}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              onKeyUp={handleCursorMove}
-              onClick={handleCursorMove}
-            />
-            <div className={styles.inputFooter}>
-              <div className={styles.modelLabel}>
-                <span className={styles.modelLabelText}>Claude Code</span>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path
-                    d="M2.5 3.75L5 6.25L7.5 3.75"
-                    stroke="#9A9A92"
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              {isStreaming ? (
-                <button
-                  className={`${styles.sendButton} ${styles.stopButton}`}
-                  onClick={abortMessage}
-                >
-                  <Stop size={14} />
-                </button>
-              ) : (
-                <button
-                  className={styles.sendButton}
-                  onClick={handleSend}
-                  disabled={!input.trim()}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path
-                      d="M14 2L7 9M14 2L9.5 14L7 9M14 2L2 6.5L7 9"
-                      stroke="currentColor"
-                      strokeWidth="1.3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
+            {fileSelectorEl}
+            {textareaEl}
+            {footerEl}
           </>
         )}
       </div>

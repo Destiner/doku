@@ -45,15 +45,24 @@
 }
 
 .inputWrapper {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  border-radius: 8px;
   position: relative;
+  background: #fff;
+}
+
+.inputWrapper:focus-within {
+  border-color: #aaa;
 }
 
 .input {
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 40px 12px 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  padding: 12px 12px 0;
+  border: none;
+  border-radius: 8px 8px 0 0;
   font-size: 14px;
   font-family: inherit;
   line-height: 1.5;
@@ -64,14 +73,15 @@
   overflow-y: auto;
 }
 
-.input:focus {
-  border-color: #aaa;
+.inputFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
 }
 
+
 .submitButton {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
   width: 28px;
   height: 28px;
   display: flex;
