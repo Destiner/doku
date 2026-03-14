@@ -1,7 +1,7 @@
 {
   "name": "doku",
   "type": "module",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "scripts": {
     "dev": "concurrently \"NODE_ENV=development bun run --watch server/index.ts\" \"bunx vite\"",
     "dev:playground": "concurrently \"NODE_ENV=development DOKU_PLAYGROUND=1 bun run --watch server/index.ts\" \"bunx vite\"",
