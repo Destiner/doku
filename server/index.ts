@@ -641,7 +641,7 @@ const server = Bun.serve({
                     typeof (block as { input?: { file_path?: string } }).input
                       ?.file_path === "string" &&
                     (
-                      block as { input: { file_path: string } }
+                      block as unknown as { input: { file_path: string } }
                     ).input.file_path.includes("/.claude/plans/")
                   ) {
                     if (block.id) suppressedToolIds.add(block.id);
