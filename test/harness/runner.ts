@@ -30,7 +30,11 @@ async function runTestCase(test: TestCase): Promise<TestCaseResult> {
     const start = Date.now();
 
     // Run harness with timeout
-    const result = await Promise.race([
+    const timeout = test.followUps
+      ? DEFAULT_TIMEOUT * (1 + test.followUps.length)
+      : DEFAULT_TIMEOUT;
+
+    let result = await Promise.race([
       runHarness({
         prompt: test.prompt,
         docPath,
@@ -38,9 +42,32 @@ async function runTestCase(test: TestCase): Promise<TestCaseResult> {
         cwd: projectDir,
       }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Test timed out")), DEFAULT_TIMEOUT),
+        setTimeout(() => reject(new Error("Test timed out")), timeout),
       ),
     ]);
+
+    if (test.followUps && result.sessionId) {
+      for (const followUp of test.followUps) {
+        const next = await Promise.race([
+          runHarness({
+            prompt: followUp,
+            docPath,
+            mode: test.mode,
+            sessionId: result.sessionId,
+            cwd: projectDir,
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Test timed out")), timeout),
+          ),
+        ]);
+        result = {
+          events: [...result.events, ...next.events],
+          sessionId: next.sessionId ?? result.sessionId,
+          docContent: next.docContent,
+          toolsUsed: [...new Set([...result.toolsUsed, ...next.toolsUsed])],
+        };
+      }
+    }
 
     const durationMs = Date.now() - start;
 

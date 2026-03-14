@@ -5,6 +5,7 @@ export interface TestCase {
   name: string;
   mode: DocMode;
   prompt: string;
+  followUps?: string[];
   initialDocContent?: string;
   maxTurns?: number;
   assertions: Assertion[];
