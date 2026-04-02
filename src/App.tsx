@@ -9,6 +9,8 @@ import { Plus, CopySimple, Check, Trash } from "@phosphor-icons/react";
 import { DeleteConfirm } from "./components/DeleteConfirm";
 import styles from "./App.module.css";
 
+const NEW_DOC_LABEL = "New Document";
+
 type ViewPhase = "compose" | "chat-focused" | "classic";
 
 export function App() {
@@ -129,10 +131,10 @@ export function App() {
               else setActiveDoc(val);
             }}
           >
-            {isGhost && <option value="">New document</option>}
+            {isGhost && <option value="">{NEW_DOC_LABEL}</option>}
             {docs.map((doc) => (
               <option key={doc.id} value={doc.id}>
-                {doc.title || "New Document"}
+                {doc.title || NEW_DOC_LABEL}
               </option>
             ))}
           </select>
@@ -157,7 +159,7 @@ export function App() {
           <button
             className={styles.iconBtn}
             onClick={() => createGhost()}
-            title="New document"
+            title={NEW_DOC_LABEL}
           >
             <Plus size={16} />
           </button>
