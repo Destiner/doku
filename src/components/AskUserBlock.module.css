@@ -1,22 +1,22 @@
 .block {
-  margin: 8px 0;
-  border: 1px solid #e6e6e0;
-  border-radius: 8px;
+  margin: var(--pg-block-margin, 0) 0;
+  border: 1px solid var(--pg-block-border-color, #e6e6e0);
+  border-radius: var(--pg-block-border-radius, 8px);
   overflow: hidden;
 }
 
 .questionSection {
-  padding: 10px 12px;
+  padding: var(--pg-section-py, 6px) var(--pg-section-px, 6px);
 }
 
 .questionSection + .questionSection {
-  border-top: 1px solid #e6e6e0;
+  border-top: 1px solid var(--pg-block-border-color, #e6e6e0);
 }
 
 .header {
   display: inline-block;
   font-family: "Inter", system-ui, sans-serif;
-  font-size: 10px;
+  font-size: var(--pg-header-font-size, 9px);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -29,7 +29,7 @@
 
 .questionText {
   font-family: "Inter", system-ui, sans-serif;
-  font-size: 13px;
+  font-size: var(--pg-question-font-size, 13px);
   font-weight: 500;
   color: #1a1a18;
   margin-bottom: 8px;
@@ -38,15 +38,15 @@
 .options {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--pg-option-gap, 2px);
 }
 
 .option {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
+  padding: var(--pg-option-py, 2px) var(--pg-option-px, 6px);
+  border-radius: var(--pg-option-border-radius, 6px);
   cursor: pointer;
   border: 1px solid transparent;
   transition:
@@ -59,8 +59,8 @@
 }
 
 .optionSelected {
-  background: #f0f4ff;
-  border-color: #c0d0f0;
+  background: var(--pg-selected-bg, #f2f3ed);
+  border-color: var(--pg-selected-border, #d5d6d0);
 }
 
 .optionDisabled {
@@ -74,14 +74,14 @@
 
 .optionDisabled.optionSelected {
   opacity: 1;
-  background: #f0f4ff;
+  background: var(--pg-selected-bg, #f2f3ed);
 }
 
 .radio,
 .checkbox {
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
+  width: var(--pg-indicator-size, 14px);
+  height: var(--pg-indicator-size, 14px);
   margin-top: 1px;
   border: 1.5px solid #b5b5ad;
   background: #fff;
@@ -101,23 +101,24 @@
 
 .radioSelected,
 .checkboxSelected {
-  border-color: #4a7adb;
+  border-color: var(--pg-accent, #9fa19d);
 }
 
 .radioDot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #4a7adb;
+  background: var(--pg-accent, #9fa19d);
 }
 
 .checkMark {
+  display: block;
   width: 8px;
-  height: 8px;
-  color: #4a7adb;
-  line-height: 1;
-  font-size: 10px;
-  font-weight: 700;
+  height: 5px;
+  border-left: 1.5px solid var(--pg-accent, #9fa19d);
+  border-bottom: 1.5px solid var(--pg-accent, #9fa19d);
+  transform: rotate(-45deg);
+  margin-top: -1px;
 }
 
 .optionContent {
@@ -127,21 +128,21 @@
 
 .optionLabel {
   font-family: "Inter", system-ui, sans-serif;
-  font-size: 13px;
+  font-size: var(--pg-option-label-font-size, 12px);
   font-weight: 500;
   color: #1a1a18;
 }
 
 .optionDescription {
   font-family: "Inter", system-ui, sans-serif;
-  font-size: 11px;
+  font-size: var(--pg-option-desc-font-size, 10px);
   color: #9a9a92;
   margin-top: 1px;
 }
 
 .submitArea {
-  padding: 8px 12px;
-  border-top: 1px solid #e6e6e0;
+  padding: 8px var(--pg-section-px, 6px);
+  border-top: 1px solid var(--pg-block-border-color, #e6e6e0);
   display: flex;
   justify-content: flex-end;
 }

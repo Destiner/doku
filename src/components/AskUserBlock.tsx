@@ -81,9 +81,7 @@ export function AskUserBlock({ segment, onSubmit }: Props) {
                       <div
                         className={`${styles.checkbox} ${isSelected ? styles.checkboxSelected : ""}`}
                       >
-                        {isSelected && (
-                          <span className={styles.checkMark}>✓</span>
-                        )}
+                        {isSelected && <span className={styles.checkMark} />}
                       </div>
                     ) : (
                       <div

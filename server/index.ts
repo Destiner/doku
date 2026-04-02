@@ -609,9 +609,7 @@ const server = Bun.serve({
                     block.name === "AskUserQuestion"
                   ) {
                     enqueue(
-                      encoder.encode(
-                        `data: ${JSON.stringify(event)}\n\n`,
-                      ),
+                      encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
                     );
                     suppressAfterAskUser = true;
                     return;
