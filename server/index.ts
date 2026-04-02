@@ -608,6 +608,11 @@ const server = Bun.serve({
                     block.type === "tool_use" &&
                     block.name === "AskUserQuestion"
                   ) {
+                    enqueue(
+                      encoder.encode(
+                        `data: ${JSON.stringify(event)}\n\n`,
+                      ),
+                    );
                     suppressAfterAskUser = true;
                     return;
                   }
