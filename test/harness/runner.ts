@@ -1,7 +1,11 @@
 import { mkdtempSync, writeFileSync, cpSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { runHarness } from "../../server/harness";
+import {
+  runHarness,
+  createMcpConfig,
+  cleanupMcpConfig,
+} from "../../server/harness";
 import { runAssertion, takeSnapshot } from "./assertions";
 import type { TestCase, TestCaseResult } from "./types";
 
@@ -14,6 +18,8 @@ async function runTestCase(test: TestCase): Promise<TestCaseResult> {
   const tempDir = mkdtempSync(join(tmpdir(), `doku-test-${test.name}-`));
   const projectDir = join(tempDir, "project");
   const docPath = join(tempDir, "doc.md");
+
+  const mcpConfigPath = createMcpConfig(docPath);
 
   try {
     // Copy fixture into project dir
@@ -40,6 +46,7 @@ async function runTestCase(test: TestCase): Promise<TestCaseResult> {
         docPath,
         mode: test.mode,
         cwd: projectDir,
+        mcpConfigPath,
       }),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Test timed out")), timeout),
@@ -55,6 +62,7 @@ async function runTestCase(test: TestCase): Promise<TestCaseResult> {
             mode: test.mode,
             sessionId: result.sessionId,
             cwd: projectDir,
+            mcpConfigPath,
           }),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error("Test timed out")), timeout),
@@ -91,6 +99,7 @@ async function runTestCase(test: TestCase): Promise<TestCaseResult> {
       error: String(err),
     };
   } finally {
+    cleanupMcpConfig(mcpConfigPath);
     if (keepArtifacts) {
       console.log(`    artifacts: ${tempDir}`);
     } else {

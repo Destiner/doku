@@ -8,6 +8,10 @@ const test: TestCase = {
     { type: "doc_not_empty" },
     { type: "doc_contains", pattern: /typescript/i },
     { type: "used_any_tool", tools: ["WebSearch", "WebFetch"] },
+    {
+      type: "used_any_tool",
+      tools: ["mcp__doku__write_document", "mcp__doku__edit_document"],
+    },
     { type: "project_unchanged" },
   ],
 };

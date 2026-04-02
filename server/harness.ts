@@ -1,5 +1,6 @@
 import { spawn } from "bun";
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, unlinkSync } from "fs";
+import { resolve } from "path";
 import type { DocMode } from "./storage";
 
 export interface HarnessInput {
@@ -8,6 +9,7 @@ export interface HarnessInput {
   mode: DocMode;
   sessionId?: string;
   cwd?: string;
+  mcpConfigPath: string;
 }
 
 export interface StreamEvent {
@@ -22,13 +24,49 @@ export interface HarnessResult {
   toolsUsed: string[];
 }
 
-function buildSystemPrompt(mode: DocMode, docPath: string): string {
-  const prompts: Record<string, string> = {
-    planning: `You are a planning assistant. You help the user think through ideas, draft plans, and write specs.\nThe shared document is at: ${docPath}\nTo read the current document state, use Read("${docPath}").\nTo write or update the document, use ExitPlanMode with the full document content in the "plan" parameter.\nDo NOT use Edit or Write on the document file directly — always go through ExitPlanMode.\nAlways express plans, research, and proposals through ExitPlanMode — not as chat-only messages.\nThe document is the artifact; chat is for clarifications and brief summaries.\nPrefer using mermaid diagrams where it makes sense.`,
-    research: `Your role is to investigate topics, synthesize findings, and write research reports.\nThe shared document is at: ${docPath}\nTo read the current document state, use Read("${docPath}").\nTo write or update the document, use ExitPlanMode with the full document content in the "plan" parameter.\nDo NOT use Edit or Write on the document file directly — always go through ExitPlanMode.\nYou have web tools (WebSearch, WebFetch) available for internet research, but codebase research is equally valid—not all research requires the web.\nAlways write findings and analysis through ExitPlanMode — not as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.\nPrefer using mermaid diagrams where it makes sense.`,
-    general: `Write to the document.\nThe shared document is at: ${docPath}\nTo read the current document state, use Read("${docPath}").\nTo write or update the document, use ExitPlanMode with the full document content in the "plan" parameter.\nDo NOT use Edit or Write on the document file directly — always go through ExitPlanMode.\nAlways write through ExitPlanMode — not as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.\nPrefer using mermaid diagrams where it makes sense.`,
+export function createMcpConfig(docPath: string): string {
+  const configPath = `/tmp/doku-mcp-${crypto.randomUUID()}.json`;
+  const config = {
+    mcpServers: {
+      doku: {
+        command: "bun",
+        args: ["run", resolve(__dirname, "mcp.ts")],
+        env: { DOC_PATH: docPath },
+      },
+    },
   };
-  return prompts[mode] || prompts.planning;
+  writeFileSync(configPath, JSON.stringify(config));
+  return configPath;
+}
+
+export function cleanupMcpConfig(configPath: string): void {
+  try {
+    unlinkSync(configPath);
+  } catch {
+    // best-effort cleanup
+  }
+}
+
+function buildSystemPrompt(mode: DocMode): string {
+  const docTools = `To read the current document, use \`read_document\`. To replace the entire document, use \`write_document\`. To make targeted changes, use \`edit_document\` with \`old_text\` and \`new_text\`.`;
+
+  const common = [
+    docTools,
+    "Always write through the document tools — not as chat-only messages. The document is the artifact; chat is for clarifications and brief summaries.",
+    "Do NOT implement changes directly — the Write and Edit tools for project files are not available in this session. Focus on writing to the document only.",
+    "Prefer using mermaid diagrams where it makes sense.",
+  ].join("\n");
+
+  const intros: Record<string, string> = {
+    planning:
+      "You are a planning assistant. You help the user think through ideas, draft plans, and write specs.",
+    research:
+      "Your role is to investigate topics, synthesize findings, and write research reports.\nYou have web tools (WebSearch, WebFetch) available for internet research, but codebase research is equally valid—not all research requires the web.",
+    general: "Write to the document.",
+  };
+
+  const intro = intros[mode] || intros.planning;
+  return `${intro}\n${common}`;
 }
 
 export function buildClaudeCommand(input: HarnessInput): string[] {
@@ -38,23 +76,25 @@ export function buildClaudeCommand(input: HarnessInput): string[] {
     "--output-format",
     "stream-json",
     "--verbose",
-    "--permission-mode",
-    "plan",
+    "--mcp-config",
+    input.mcpConfigPath,
     "--allowed-tools",
+    "mcp__doku__read_document",
+    "mcp__doku__write_document",
+    "mcp__doku__edit_document",
     "Read",
     "Glob",
     "Grep",
+    "Bash",
     "WebSearch",
     "WebFetch",
+    "AskUserQuestion",
   ];
+
+  cmd.push("--append-system-prompt", buildSystemPrompt(input.mode));
 
   if (input.sessionId) {
     cmd.push("--resume", input.sessionId);
-  } else {
-    cmd.push(
-      "--append-system-prompt",
-      buildSystemPrompt(input.mode, input.docPath),
-    );
   }
 
   cmd.push(input.prompt);
@@ -102,7 +142,6 @@ export async function runHarness(input: HarnessInput): Promise<HarnessResult> {
       sessionId = event.session_id as string;
     }
 
-    // stream-json format: tool_use blocks are nested in assistant message content
     if (event.type === "assistant" && event.message) {
       const msg = event.message as {
         content?: Array<{
@@ -119,14 +158,6 @@ export async function runHarness(input: HarnessInput): Promise<HarnessResult> {
             !toolsUsed.includes(block.name)
           ) {
             toolsUsed.push(block.name);
-          }
-
-          // Intercept ExitPlanMode: write plan content to doc file
-          if (block.type === "tool_use" && block.name === "ExitPlanMode") {
-            const planInput = block.input as { plan?: string } | undefined;
-            if (planInput?.plan) {
-              writeFileSync(input.docPath, planInput.plan, "utf-8");
-            }
           }
         }
       }

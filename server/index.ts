@@ -1,11 +1,5 @@
 import { spawn } from "bun";
-import {
-  existsSync,
-  readFileSync,
-  writeFileSync,
-  statSync,
-  readdirSync,
-} from "fs";
+import { existsSync, readFileSync, statSync, readdirSync } from "fs";
 import { join, resolve, extname, relative } from "path";
 import { homedir } from "os";
 import { encodeProjectPath, getActiveSessionId } from "./storage";
@@ -16,7 +10,11 @@ import {
   generateDocId,
 } from "./storage-provider";
 import { describeToolCall, generateToolSummary } from "../src/utils/toolCalls";
-import { buildClaudeCommand } from "./harness";
+import {
+  buildClaudeCommand,
+  createMcpConfig,
+  cleanupMcpConfig,
+} from "./harness";
 let embeddedAssetPaths: Record<string, string> = {};
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -253,16 +251,6 @@ function parseChatHistory(sessionId: string): ChatMessage[] {
         }
 
         if (block.type === "tool_use" && block.name) {
-          // Hide ExitPlanMode and plan-dir Write from chat history
-          if (block.name === "ExitPlanMode") continue;
-          if (
-            block.name === "Write" &&
-            typeof block.input?.file_path === "string" &&
-            block.input.file_path.includes("/.claude/plans/")
-          ) {
-            continue;
-          }
-
           const { label, detail } = describeToolCall(
             block.name,
             block.input || {},
@@ -462,15 +450,21 @@ const server = Bun.serve({
       const env = { ...process.env };
       delete env.CLAUDECODE;
 
+      const mcpConfigPath = createMcpConfig(docPath);
+
       const cmd = buildClaudeCommand({
         prompt,
         docPath,
         mode: docMeta.mode,
         sessionId: currentSessionId ?? undefined,
+        mcpConfigPath,
       });
 
       console.log(
         `[chat] spawning claude (doc: ${docId}/${docMeta.name}, session: ${currentSessionId || "new"}) prompt: "${prompt.slice(0, 100)}..."`,
+      );
+      console.log(
+        `[chat] cmd: ${cmd.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(" ")}`,
       );
 
       const proc = spawn({
@@ -588,12 +582,7 @@ const server = Bun.serve({
             }
           }
 
-          // When true, suppress all remaining events (after AskUserQuestion)
           let suppressAfterAskUser = false;
-          // When true, suppress events after ExitPlanMode (denial error + follow-up text)
-          let suppressAfterExitPlan = false;
-          // Tool IDs to suppress tool_result events for (e.g. Write to plans dir)
-          const suppressedToolIds = new Set<string>();
 
           function processEvent(event: Record<string, unknown>) {
             if (event.type === "error") console.error(`[chat] error:`, event);
@@ -601,18 +590,7 @@ const server = Bun.serve({
             captureSession(event);
 
             if (suppressAfterAskUser) return;
-            if (suppressAfterExitPlan) return;
 
-            // Suppress tool_result events for suppressed tool IDs
-            if (event.type === "tool_result") {
-              const toolUseId = event.tool_use_id as string | undefined;
-              if (toolUseId && suppressedToolIds.has(toolUseId)) {
-                suppressedToolIds.delete(toolUseId);
-                return;
-              }
-            }
-
-            // Detect AskUserQuestion in assistant message content blocks
             if (event.type === "assistant") {
               const msg = event.message as
                 | {
@@ -631,47 +609,6 @@ const server = Bun.serve({
                     block.name === "AskUserQuestion"
                   ) {
                     suppressAfterAskUser = true;
-                    return;
-                  }
-
-                  // Suppress Write to ~/.claude/plans/ (plan file write before ExitPlanMode)
-                  if (
-                    block.type === "tool_use" &&
-                    block.name === "Write" &&
-                    typeof (block as { input?: { file_path?: string } }).input
-                      ?.file_path === "string" &&
-                    (
-                      block as unknown as { input: { file_path: string } }
-                    ).input.file_path.includes("/.claude/plans/")
-                  ) {
-                    if (block.id) suppressedToolIds.add(block.id);
-                    return;
-                  }
-
-                  // Intercept ExitPlanMode: extract plan content, write to doc, suppress
-                  if (
-                    block.type === "tool_use" &&
-                    block.name === "ExitPlanMode"
-                  ) {
-                    const input = block.input as
-                      | { plan?: string; planFilePath?: string }
-                      | undefined;
-                    if (input?.plan) {
-                      try {
-                        writeFileSync(docPath, input.plan, "utf-8");
-                        console.log(
-                          `[chat] ExitPlanMode: wrote ${input.plan.length} chars to ${docPath}`,
-                        );
-                      } catch (err) {
-                        console.error(
-                          `[chat] ExitPlanMode: failed to write doc:`,
-                          err,
-                        );
-                      }
-                    }
-                    // Suppress this event and all subsequent events
-                    // (the denial error + Claude's follow-up text about the denial)
-                    suppressAfterExitPlan = true;
                     return;
                   }
                 }
@@ -729,6 +666,7 @@ const server = Bun.serve({
             } catch (err) {
               console.error(`[chat] exit error: ${err}`);
             }
+            cleanupMcpConfig(mcpConfigPath);
             if (titlePromise) {
               await titlePromise;
             }

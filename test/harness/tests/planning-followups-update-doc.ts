@@ -35,6 +35,10 @@ const test: TestCase = {
     { type: "doc_contains", pattern: /Winston/i },
     { type: "doc_contains", pattern: /console/i },
     // Meta
+    {
+      type: "used_any_tool",
+      tools: ["mcp__doku__write_document", "mcp__doku__edit_document"],
+    },
     { type: "project_unchanged" },
     { type: "session_created" },
   ],

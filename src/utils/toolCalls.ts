@@ -97,6 +97,18 @@ export function describeToolCall(
         label: "Search online",
         detail: params.query ? truncate(params.query as string, 60) : "",
       };
+    case "mcp__doku__read_document":
+      return { label: "Read document", detail: "" };
+    case "mcp__doku__write_document":
+      return {
+        label: "Write document",
+        detail: "",
+      };
+    case "mcp__doku__edit_document":
+      return {
+        label: "Edit document",
+        detail: "",
+      };
     default:
       return { label: name, detail: "" };
   }
@@ -116,7 +128,13 @@ export function generateToolSummary(
             ? "ToolSearch"
             : tc.name === "WebSearch"
               ? "WebSearch"
-              : tc.name;
+              : tc.name === "mcp__doku__write_document"
+                ? "WriteDoc"
+                : tc.name === "mcp__doku__edit_document"
+                  ? "EditDoc"
+                  : tc.name === "mcp__doku__read_document"
+                    ? "ReadDoc"
+                    : tc.name;
     counts[key] = (counts[key] || 0) + 1;
   }
 
@@ -132,6 +150,9 @@ export function generateToolSummary(
     TodoWrite: () => "updated tasks",
     ToolSearch: (n) => `searched for ${n} tool${n > 1 ? "s" : ""}`,
     WebSearch: (n) => `searched online ${n} time${n > 1 ? "s" : ""}`,
+    ReadDoc: (n) => `read document ${n} time${n > 1 ? "s" : ""}`,
+    WriteDoc: (n) => `wrote document ${n} time${n > 1 ? "s" : ""}`,
+    EditDoc: (n) => `edited document ${n} time${n > 1 ? "s" : ""}`,
   };
 
   const parts: string[] = [];
