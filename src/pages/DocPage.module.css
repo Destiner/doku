@@ -1,0 +1,113 @@
+.header {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding-inline: 24px;
+  border-bottom: 1px solid #e6e6e0;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a18;
+  letter-spacing: -0.02em;
+  line-height: 18px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: #e6e6e0;
+  flex-shrink: 0;
+  margin: 0 16px;
+}
+
+.docSwitcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f3f2ee;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+.docSwitcher:hover {
+  background: #ebeae5;
+}
+
+.docSelect {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a18;
+  line-height: 16px;
+  width: 260px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 0;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: #9a9a92;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9a9a92;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.iconBtn:hover {
+  background: #f3f2ee;
+  color: #6a6a62;
+}
+
+.deleteBtn:hover {
+  background: #fef2ee;
+  color: #c45a32;
+}
+
+.deleteWrapper {
+  position: relative;
+}
+
+.container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: clip;
+}

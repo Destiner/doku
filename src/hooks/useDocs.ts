@@ -17,55 +17,32 @@ export interface Ghost {
 
 export function useDocs() {
   const [docs, setDocs] = useState<DocEntry[]>([]);
-  const [activeDoc, setActiveDocState] = useState<string | null>(null);
   const [ghost, setGhost] = useState<Ghost | null>(null);
-  const activeDocRef = useRef<string | null>(null);
   const materializingRef = useRef<Promise<DocEntry> | null>(null);
-  useEffect(() => {
-    activeDocRef.current = activeDoc;
-  }, [activeDoc]);
 
-  const fetchDocs = useCallback(async () => {
-    try {
-      const res = await fetch("/api/docs");
-      const { docs: list } = (await res.json()) as { docs: DocEntry[] };
-      list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-      setDocs(list);
-      return list;
-    } catch (err) {
-      console.error("Failed to fetch docs:", err);
-      return [];
-    }
+  const cleanupEmptyDoc = useCallback((docId: string) => {
+    fetch(`/api/doc/${encodeURIComponent(docId)}?ifEmpty`, {
+      method: "DELETE",
+    })
+      .then((res) => res.json())
+      .then(({ deleted }: { deleted: boolean }) => {
+        if (deleted) {
+          setDocs((prev) => prev.filter((d) => d.id !== docId));
+        }
+      })
+      .catch((err) => console.error("Failed to cleanup empty doc:", err));
   }, []);
 
-  const setActiveDoc = useCallback((id: string | null) => {
-    const prevId = activeDocRef.current;
-    if (id) setGhost(null);
-    setActiveDocState(id);
-    if (id) {
-      fetch("/api/last-opened", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ docId: id }),
-      }).catch((err) => console.error("Failed to persist last opened:", err));
-    }
-    if (prevId && prevId !== id) {
-      fetch(`/api/doc/${encodeURIComponent(prevId)}?ifEmpty`, {
-        method: "DELETE",
-      })
-        .then((res) => res.json())
-        .then(({ deleted }: { deleted: boolean }) => {
-          if (deleted) {
-            setDocs((prev) => prev.filter((d) => d.id !== prevId));
-          }
-        })
-        .catch((err) => console.error("Failed to cleanup empty doc:", err));
-    }
+  const persistLastOpened = useCallback((docId: string) => {
+    fetch("/api/last-opened", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ docId }),
+    }).catch((err) => console.error("Failed to persist last opened:", err));
   }, []);
 
   const createGhost = useCallback((mode?: DocMode) => {
     setGhost({ mode: mode || "planning" });
-    setActiveDocState(null);
   }, []);
 
   const materializeGhost = useCallback(async (): Promise<DocEntry> => {
@@ -93,7 +70,6 @@ export function useDocs() {
       };
       setDocs((prev) => [docEntry, ...prev]);
       setGhost(null);
-      setActiveDocState(docEntry.id);
       materializingRef.current = null;
       return docEntry;
     })();
@@ -108,32 +84,33 @@ export function useDocs() {
         await fetch(`/api/doc/${encodeURIComponent(id)}`, {
           method: "DELETE",
         });
+        setDocs((prev) => prev.filter((d) => d.id !== id));
         const remaining = docs.filter((d) => d.id !== id);
-        setDocs(remaining);
-        if (activeDocRef.current === id) {
-          if (remaining.length > 0) {
-            const next = remaining[0];
-            setActiveDocState(next.id);
-            setGhost(null);
-          } else {
-            setActiveDocState(null);
-            setGhost({ mode: "planning" });
-          }
-        }
+        return remaining;
       } catch (err) {
         console.error("Failed to delete doc:", err);
+        return docs;
       }
     },
     [docs],
   );
 
   useEffect(() => {
-    async function init() {
-      await fetchDocs();
-      setGhost({ mode: "planning" });
-    }
-    init();
-  }, [fetchDocs]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/docs");
+        const { docs: list } = (await res.json()) as { docs: DocEntry[] };
+        list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+        if (!cancelled) setDocs(list);
+      } catch (err) {
+        console.error("Failed to fetch docs:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const updateDocTitle = useCallback((docId: string, title: string) => {
     setDocs((prev) => prev.map((d) => (d.id === docId ? { ...d, title } : d)));
@@ -154,11 +131,11 @@ export function useDocs() {
 
   return {
     docs,
-    activeDoc,
     ghost,
-    setActiveDoc,
     createGhost,
     materializeGhost,
+    cleanupEmptyDoc,
+    persistLastOpened,
     deleteDoc,
     updateDocTitle,
     updateDocMode,
