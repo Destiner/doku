@@ -119,22 +119,27 @@ export function generateToolSummary(
 ): string {
   const counts: Record<string, number> = {};
   for (const tc of toolCalls) {
-    const key =
-      tc.name === "Glob" || tc.name === "Grep"
-        ? "Search"
-        : tc.name === "Agent"
-          ? "Task"
-          : tc.name === "ToolSearch"
-            ? "ToolSearch"
-            : tc.name === "WebSearch"
-              ? "WebSearch"
-              : tc.name === "mcp__doku__write_document"
-                ? "WriteDoc"
-                : tc.name === "mcp__doku__edit_document"
-                  ? "EditDoc"
-                  : tc.name === "mcp__doku__read_document"
-                    ? "ReadDoc"
-                    : tc.name;
+    let key: string;
+    switch (tc.name) {
+      case "Glob":
+      case "Grep":
+        key = "Search";
+        break;
+      case "Agent":
+        key = "Task";
+        break;
+      case "mcp__doku__write_document":
+        key = "WriteDoc";
+        break;
+      case "mcp__doku__edit_document":
+        key = "EditDoc";
+        break;
+      case "mcp__doku__read_document":
+        key = "ReadDoc";
+        break;
+      default:
+        key = tc.name;
+    }
     counts[key] = (counts[key] || 0) + 1;
   }
 
