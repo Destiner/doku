@@ -7,15 +7,15 @@
   flex-shrink: 0;
 }
 
-.logo {
+.folderName {
   font-family: "Inter", system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a18;
-  letter-spacing: -0.02em;
+  font-size: 14px;
+  font-weight: 400;
+  color: #9a9a92;
+  letter-spacing: -0.01em;
   line-height: 18px;
+  white-space: nowrap;
   text-decoration: none;
-  cursor: pointer;
 }
 
 .divider {

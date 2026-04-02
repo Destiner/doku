@@ -7,6 +7,7 @@ import { DocPanel } from "../components/DocPanel";
 import { ChatPanel } from "../components/ChatPanel";
 import { EmptyState } from "../components/EmptyState";
 import { DeleteConfirm } from "../components/DeleteConfirm";
+import { useCwd } from "../hooks/useCwd";
 import {
   Plus,
   CopySimple,
@@ -22,6 +23,8 @@ type ViewPhase = "compose" | "chat-focused" | "classic";
 export function DocPage() {
   const { docId } = useParams<{ docId: string }>();
   const navigate = useNavigate();
+  const cwd = useCwd();
+  const folderName = cwd ? cwd.split("/").pop() : null;
   const activeDoc = docId ?? null;
 
   const {
@@ -119,7 +122,9 @@ export function DocPage() {
   return (
     <>
       <header className={styles.header}>
-        <a className={styles.logo} href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>doku</a>
+        {folderName && (
+          <a className={styles.folderName} href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>{folderName}</a>
+        )}
         <div className={styles.divider} />
         <div className={styles.docSwitcher}>
           <select

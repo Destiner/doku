@@ -7,6 +7,7 @@ import { DocPanel } from "../components/DocPanel";
 import { ChatPanel } from "../components/ChatPanel";
 import { EmptyState } from "../components/EmptyState";
 import { Plus } from "@phosphor-icons/react";
+import { useCwd } from "../hooks/useCwd";
 import styles from "../App.module.css";
 
 const NEW_DOC_LABEL = "New Document";
@@ -15,6 +16,8 @@ type ViewPhase = "compose" | "chat-focused" | "classic";
 
 export function HomePage() {
   const navigate = useNavigate();
+  const cwd = useCwd();
+  const folderName = cwd ? cwd.split("/").pop() : null;
 
   const {
     docs,
@@ -88,7 +91,9 @@ export function HomePage() {
   return (
     <>
       <header className={styles.header}>
-        <span className={styles.logo}>doku</span>
+        {folderName && (
+          <span className={styles.folderName}>{folderName}</span>
+        )}
         <div className={styles.divider} />
         <div className={styles.docSwitcher}>
           <select
