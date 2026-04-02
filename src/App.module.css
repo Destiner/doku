@@ -46,6 +46,11 @@
   font-weight: 500;
   color: #1a1a18;
   line-height: 16px;
+  width: 260px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border: none;
   background: transparent;
   cursor: pointer;
