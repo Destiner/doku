@@ -15,7 +15,7 @@ export interface Ghost {
   mode: DocMode;
 }
 
-export function useDocs() {
+export function useDocs(cwdVersion?: number) {
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [ghost, setGhost] = useState<Ghost | null>(null);
   const materializingRef = useRef<Promise<DocEntry> | null>(null);
@@ -110,7 +110,7 @@ export function useDocs() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [cwdVersion]);
 
   const updateDocTitle = useCallback((docId: string, title: string) => {
     setDocs((prev) => prev.map((d) => (d.id === docId ? { ...d, title } : d)));

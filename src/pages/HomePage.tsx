@@ -9,7 +9,7 @@ import { EmptyState } from "../components/EmptyState";
 import { CwdPicker } from "../components/CwdPicker";
 import { DirectoryBrowser } from "../components/DirectoryBrowser";
 import { Plus } from "@phosphor-icons/react";
-import { useCwd } from "../hooks/useCwd";
+import { useCwdContext } from "../contexts/CwdContext";
 import styles from "../App.module.css";
 
 const NEW_DOC_LABEL = "New Document";
@@ -18,29 +18,26 @@ type ViewPhase = "compose" | "chat-focused" | "classic";
 
 export function HomePage() {
   const navigate = useNavigate();
-  const cwd = useCwd();
+  const { cwd, cwdVersion, switchProject } = useCwdContext();
   const folderName = cwd ? cwd.split("/").pop() : null;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [browserOpen, setBrowserOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const switchProject = useCallback(async (path: string) => {
-    const res = await fetch("/api/cwd", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path }),
-    });
-    if (res.ok) {
-      window.location.href = "/";
-    }
-  }, []);
+  const handleSwitchProject = useCallback(
+    async (path: string) => {
+      const ok = await switchProject(path);
+      if (ok) navigate("/");
+    },
+    [switchProject, navigate],
+  );
 
   const handleBrowseSelect = useCallback(
     (path: string) => {
       setBrowserOpen(false);
-      switchProject(path);
+      handleSwitchProject(path);
     },
-    [switchProject],
+    [handleSwitchProject],
   );
 
   const {
@@ -50,7 +47,7 @@ export function HomePage() {
     materializeGhost,
     updateDocTitle,
     updateGhostMode,
-  } = useDocs();
+  } = useDocs(cwdVersion);
 
   useEffect(() => {
     if (!ghost) {
@@ -128,7 +125,7 @@ export function HomePage() {
           open={pickerOpen}
           onClose={() => setPickerOpen(false)}
           onBrowse={() => setBrowserOpen(true)}
-          onSelectProject={switchProject}
+          onSelectProject={handleSwitchProject}
           anchorRef={triggerRef}
         />
         <div className={styles.divider} />
