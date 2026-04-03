@@ -474,7 +474,6 @@ const server = Bun.serve({
       if (proc) {
         proc.kill("SIGTERM");
         activeProcesses.delete(abortDocId);
-
       }
       return jsonResponse({ ok: true });
     }
@@ -588,7 +587,6 @@ const server = Bun.serve({
                       `data: ${JSON.stringify({ type: "title", title })}\n\n`,
                     ),
                   );
-
                 }
               } catch {
                 // title generation failed, ignore
