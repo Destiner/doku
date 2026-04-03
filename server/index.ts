@@ -474,7 +474,7 @@ const server = Bun.serve({
       if (proc) {
         proc.kill("SIGTERM");
         activeProcesses.delete(abortDocId);
-        console.log(`[chat] aborted process for doc: ${abortDocId}`);
+
       }
       return jsonResponse({ ok: true });
     }
@@ -511,12 +511,7 @@ const server = Bun.serve({
         mcpConfigPath,
       });
 
-      console.log(
-        `[chat] spawning claude (doc: ${docId}/${docMeta.name}, session: ${currentSessionId || "new"}) prompt: "${prompt.slice(0, 100)}..."`,
-      );
-      console.log(
-        `[chat] cmd: ${cmd.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(" ")}`,
-      );
+      console.log(`[chat] spawning claude...`);
 
       const proc = spawn({
         cmd,
@@ -530,11 +525,9 @@ const server = Bun.serve({
 
       (async () => {
         const stderrReader = proc.stderr.getReader();
-        const dec = new TextDecoder();
         while (true) {
-          const { done, value } = await stderrReader.read();
+          const { done } = await stderrReader.read();
           if (done) break;
-          console.error(`[claude stderr] ${dec.decode(value)}`);
         }
       })();
 
@@ -595,12 +588,10 @@ const server = Bun.serve({
                       `data: ${JSON.stringify({ type: "title", title })}\n\n`,
                     ),
                   );
-                  console.log(
-                    `[chat] generated title for doc ${docId}: "${title}"`,
-                  );
+
                 }
-              } catch (err) {
-                console.error(`[chat] title generation failed:`, err);
+              } catch {
+                // title generation failed, ignore
               }
             })();
           }
@@ -627,17 +618,12 @@ const server = Bun.serve({
                 doc.updatedAt = now;
                 storage.setMetadata(updatedMeta);
               }
-              console.log(
-                `[chat] captured session_id: ${event.session_id} for doc: ${docId}`,
-              );
             }
           }
 
           let suppressAfterAskUser = false;
 
           function processEvent(event: Record<string, unknown>) {
-            if (event.type === "error") console.error(`[chat] error:`, event);
-
             captureSession(event);
 
             if (suppressAfterAskUser) return;
@@ -705,7 +691,6 @@ const server = Bun.serve({
               }
             }
           } catch (err) {
-            console.error(`[chat] stream error: ${err}`);
             enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({ type: "error", error: String(err) })}\n\n`,
@@ -717,8 +702,8 @@ const server = Bun.serve({
               const exitCode = await proc.exited;
               activeProcesses.delete(docId);
               console.log(`[chat] claude exited with code ${exitCode}`);
-            } catch (err) {
-              console.error(`[chat] exit error: ${err}`);
+            } catch {
+              // exit error, ignore
             }
             cleanupMcpConfig(mcpConfigPath);
             if (titlePromise) {
