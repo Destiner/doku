@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router";
+import { useParams, useNavigate, useLocation, Link } from "react-router";
 import { useDoc } from "../hooks/useDoc";
 import { useChat } from "../hooks/useChat";
 import { useDocs } from "../hooks/useDocs";
@@ -18,6 +18,7 @@ type ViewPhase = "compose" | "chat-focused" | "classic";
 export function DocPage() {
   const { docId } = useParams<{ docId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { cwd, cwdVersion } = useCwdContext();
   const folderName = cwd ? cwd.split("/").pop() : null;
   const activeDoc = docId ?? null;
@@ -52,6 +53,9 @@ export function DocPage() {
   }, []);
 
   const { textareaRef, handleInput, content } = useDoc(activeDoc);
+  const [initialPrompt] = useState<string | null>(
+    () => location.state?.initialPrompt ?? null,
+  );
   const {
     messages,
     isStreaming,
@@ -61,7 +65,7 @@ export function DocPage() {
     queueMessage,
     removeQueuedMessage,
     messageQueue,
-  } = useChat(activeDoc, updateDocTitle);
+  } = useChat(activeDoc, updateDocTitle, initialPrompt);
 
   const activeDocEntry = docs.find((d) => d.id === activeDoc);
   const activeDocMode = activeDocEntry?.mode || "planning";

@@ -76,13 +76,15 @@ function extractText(event: StreamEvent): string {
 export function useChat(
   docId: string | null,
   onTitleUpdate?: (docId: string, title: string) => void,
+  initialPrompt?: string | null,
 ) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [messageQueue, setMessageQueue] = useState<string[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const cwdRef = useRef<string | null>(null);
-  const skipNextHistoryLoad = useRef(false);
+  const skipNextHistoryLoad = useRef(!!initialPrompt);
+  const initialPromptSent = useRef(false);
   const sendMessageRef = useRef<
     (prompt: string, overrideDocId?: string) => Promise<void>
   >(null!);
@@ -417,6 +419,13 @@ export function useChat(
   );
 
   sendMessageRef.current = sendMessage;
+
+  useEffect(() => {
+    if (initialPrompt && docId && !initialPromptSent.current) {
+      initialPromptSent.current = true;
+      sendMessage(initialPrompt);
+    }
+  }, [initialPrompt, docId, sendMessage]);
 
   const queueMessage = useCallback((prompt: string) => {
     setMessageQueue((prev) => [...prev, prompt]);

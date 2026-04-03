@@ -61,7 +61,6 @@ export function HomePage() {
   const {
     messages,
     isStreaming,
-    sendMessage,
     abortMessage,
     submitAnswers,
     queueMessage,
@@ -72,10 +71,12 @@ export function HomePage() {
   const wrappedSendMessage = useCallback(
     async (prompt: string) => {
       const entry = await materializeGhost();
-      navigate(`/doc/${entry.id}`, { replace: true });
-      sendMessage(prompt, entry.id);
+      navigate(`/doc/${entry.id}`, {
+        replace: true,
+        state: { initialPrompt: prompt },
+      });
     },
-    [materializeGhost, navigate, sendMessage],
+    [materializeGhost, navigate],
   );
 
   const docIsEmpty = !content || content.trim() === "";
