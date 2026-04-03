@@ -1,6 +1,6 @@
 import { spawn } from "bun";
 import { readFileSync, writeFileSync, unlinkSync, existsSync } from "fs";
-import { resolve } from "path";
+import { dirname, resolve } from "path";
 import type { DocMode } from "./storage";
 
 export interface HarnessInput {
@@ -26,22 +26,30 @@ export interface HarnessResult {
 
 export function createMcpConfig(docPath: string): string {
   const configPath = `/tmp/doku-mcp-${crypto.randomUUID()}.json`;
-  const mcpBin = resolve(__dirname, "doku-mcp");
-  const useCompiledBinary = existsSync(mcpBin);
+
+  const binDir = dirname(process.execPath);
+  const mcpBin = resolve(binDir, "doku-mcp");
+  const mcpTs = resolve(__dirname, "mcp.ts");
+
+  let command: string;
+  let args: string[];
+
+  if (existsSync(mcpBin)) {
+    command = mcpBin;
+    args = [];
+  } else if (existsSync(mcpTs)) {
+    command = "bun";
+    args = ["run", mcpTs];
+  } else {
+    console.error(
+      `FATAL: MCP server not found. Checked:\n  - ${mcpBin}\n  - ${mcpTs}`,
+    );
+    process.exit(1);
+  }
 
   const config = {
     mcpServers: {
-      doku: useCompiledBinary
-        ? {
-            command: mcpBin,
-            args: [],
-            env: { DOC_PATH: docPath },
-          }
-        : {
-            command: "bun",
-            args: ["run", resolve(__dirname, "mcp.ts")],
-            env: { DOC_PATH: docPath },
-          },
+      doku: { command, args, env: { DOC_PATH: docPath } },
     },
   };
   writeFileSync(configPath, JSON.stringify(config));
