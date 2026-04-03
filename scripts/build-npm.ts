@@ -97,6 +97,24 @@ for (const { bunTarget, pkg, os, cpu } of TARGETS) {
     process.exit(1);
   }
 
+  const mcpProc = Bun.spawnSync(
+    [
+      "bun",
+      "build",
+      "--compile",
+      `--target=${bunTarget}`,
+      "server/mcp.ts",
+      "--outfile",
+      `${outDir}/bin/doku-mcp`,
+    ],
+    { stdout: "inherit", stderr: "inherit" },
+  );
+
+  if (mcpProc.exitCode !== 0) {
+    console.error(`Failed to build MCP server for ${bunTarget}`);
+    process.exit(1);
+  }
+
   writeFileSync(
     `${outDir}/package.json`,
     JSON.stringify(

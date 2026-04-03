@@ -1,5 +1,5 @@
 import { spawn } from "bun";
-import { readFileSync, writeFileSync, unlinkSync } from "fs";
+import { readFileSync, writeFileSync, unlinkSync, existsSync } from "fs";
 import { resolve } from "path";
 import type { DocMode } from "./storage";
 
@@ -26,13 +26,22 @@ export interface HarnessResult {
 
 export function createMcpConfig(docPath: string): string {
   const configPath = `/tmp/doku-mcp-${crypto.randomUUID()}.json`;
+  const mcpBin = resolve(__dirname, "doku-mcp");
+  const useCompiledBinary = existsSync(mcpBin);
+
   const config = {
     mcpServers: {
-      doku: {
-        command: "bun",
-        args: ["run", resolve(__dirname, "mcp.ts")],
-        env: { DOC_PATH: docPath },
-      },
+      doku: useCompiledBinary
+        ? {
+            command: mcpBin,
+            args: [],
+            env: { DOC_PATH: docPath },
+          }
+        : {
+            command: "bun",
+            args: ["run", resolve(__dirname, "mcp.ts")],
+            env: { DOC_PATH: docPath },
+          },
     },
   };
   writeFileSync(configPath, JSON.stringify(config));
