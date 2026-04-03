@@ -1,0 +1,90 @@
+.popover {
+  position: absolute;
+  top: 48px;
+  left: 24px;
+  width: 300px;
+  max-height: 400px;
+  background: #fff;
+  border: 1px solid #e6e6e0;
+  border-radius: 10px;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  z-index: 100;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionLabel {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #9a9a92;
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
+  padding: 8px 12px 4px;
+}
+
+.projectList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  max-height: 260px;
+}
+
+.projectItem {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.projectItem:hover {
+  background: #f7f7f4;
+}
+
+.projectName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a18;
+  flex-shrink: 0;
+}
+
+.projectPath {
+  font-size: 11px;
+  color: #9a9a92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browseBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a18;
+  text-align: left;
+}
+
+.browseBtn:hover {
+  background: #f7f7f4;
+}

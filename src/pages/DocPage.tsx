@@ -7,13 +7,10 @@ import { DocPanel } from "../components/DocPanel";
 import { ChatPanel } from "../components/ChatPanel";
 import { EmptyState } from "../components/EmptyState";
 import { DeleteConfirm } from "../components/DeleteConfirm";
+import { CwdPicker } from "../components/CwdPicker";
+import { DirectoryBrowser } from "../components/DirectoryBrowser";
 import { useCwd } from "../hooks/useCwd";
-import {
-  Plus,
-  CopySimple,
-  Check,
-  Trash,
-} from "@phosphor-icons/react";
+import { Plus, CopySimple, Check, Trash } from "@phosphor-icons/react";
 import styles from "./DocPage.module.css";
 
 const NEW_DOC_LABEL = "New Document";
@@ -26,6 +23,28 @@ export function DocPage() {
   const cwd = useCwd();
   const folderName = cwd ? cwd.split("/").pop() : null;
   const activeDoc = docId ?? null;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const switchProject = useCallback(async (path: string) => {
+    const res = await fetch("/api/cwd", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    if (res.ok) {
+      window.location.href = "/";
+    }
+  }, []);
+
+  const handleBrowseSelect = useCallback(
+    (path: string) => {
+      setBrowserOpen(false);
+      switchProject(path);
+    },
+    [switchProject],
+  );
 
   const {
     docs,
@@ -123,8 +142,21 @@ export function DocPage() {
     <>
       <header className={styles.header}>
         {folderName && (
-          <a className={styles.folderName} href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>{folderName}</a>
+          <button
+            ref={triggerRef}
+            className={styles.folderName}
+            onClick={() => setPickerOpen((v) => !v)}
+          >
+            {folderName}
+          </button>
         )}
+        <CwdPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onBrowse={() => setBrowserOpen(true)}
+          onSelectProject={switchProject}
+          anchorRef={triggerRef}
+        />
         <div className={styles.divider} />
         <div className={styles.docSwitcher}>
           <select
@@ -255,6 +287,12 @@ export function DocPage() {
           </>
         )}
       </div>
+      <DirectoryBrowser
+        open={browserOpen}
+        onCancel={() => setBrowserOpen(false)}
+        onSelect={handleBrowseSelect}
+        initialPath={cwd ?? undefined}
+      />
     </>
   );
 }

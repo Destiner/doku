@@ -66,7 +66,7 @@ const HAS_EMBEDDED_ASSETS = Object.keys(embeddedAssetPaths).length > 0;
 const isPlayground =
   process.argv.includes("--playground") || process.env.DOKU_PLAYGROUND === "1";
 
-const PROJECT_CWD = (() => {
+let PROJECT_CWD = (() => {
   const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
   return args[0] ? resolve(args[0]) : process.cwd();
 })();
@@ -276,7 +276,7 @@ if (!Bun.which("claude")) {
   process.exit(1);
 }
 
-const storage: StorageProvider = isPlayground
+let storage: StorageProvider = isPlayground
   ? new EphemeralStorage()
   : new FileSystemStorage(PROJECT_CWD);
 
@@ -413,6 +413,57 @@ const server = Bun.serve({
     // --- GET /api/cwd ---
     if (pathname === "/api/cwd" && req.method === "GET") {
       return jsonResponse({ cwd: PROJECT_CWD });
+    }
+
+    // --- GET /api/projects ---
+    if (pathname === "/api/projects" && req.method === "GET") {
+      const projectsRoot = join(homedir(), ".doku", "projects");
+      const projects: Array<{ path: string; name: string }> = [];
+      if (existsSync(projectsRoot)) {
+        for (const entry of readdirSync(projectsRoot)) {
+          const decoded = entry.replace(/-/g, "/");
+          if (existsSync(decoded) && statSync(decoded).isDirectory()) {
+            projects.push({ path: decoded, name: decoded.split("/").pop()! });
+          }
+        }
+      }
+      return jsonResponse({ projects });
+    }
+
+    // --- POST /api/cwd ---
+    if (pathname === "/api/cwd" && req.method === "POST") {
+      const body = await req.json();
+      const { path: newPath } = body as { path: string };
+      const resolved = resolve(newPath);
+      if (!existsSync(resolved) || !statSync(resolved).isDirectory()) {
+        return jsonResponse({ error: "Not a valid directory" }, 400);
+      }
+      for (const proc of activeProcesses.values()) {
+        proc.kill("SIGTERM");
+      }
+      activeProcesses.clear();
+      PROJECT_CWD = resolved;
+      storage = new FileSystemStorage(PROJECT_CWD);
+      return jsonResponse({ cwd: PROJECT_CWD });
+    }
+
+    // --- GET /api/directories ---
+    if (pathname === "/api/directories" && req.method === "GET") {
+      const dirPath = url.searchParams.get("path") || homedir();
+      const resolved = resolve(dirPath);
+      if (!existsSync(resolved) || !statSync(resolved).isDirectory()) {
+        return jsonResponse({ error: "Not a directory" }, 400);
+      }
+      try {
+        const entries = readdirSync(resolved, { withFileTypes: true });
+        const directories = entries
+          .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((e) => ({ name: e.name, path: join(resolved, e.name) }));
+        return jsonResponse({ path: resolved, directories });
+      } catch {
+        return jsonResponse({ error: "Cannot read directory" }, 403);
+      }
     }
 
     // --- POST /api/chat/abort ---

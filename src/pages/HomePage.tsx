@@ -6,6 +6,8 @@ import { useDocs } from "../hooks/useDocs";
 import { DocPanel } from "../components/DocPanel";
 import { ChatPanel } from "../components/ChatPanel";
 import { EmptyState } from "../components/EmptyState";
+import { CwdPicker } from "../components/CwdPicker";
+import { DirectoryBrowser } from "../components/DirectoryBrowser";
 import { Plus } from "@phosphor-icons/react";
 import { useCwd } from "../hooks/useCwd";
 import styles from "../App.module.css";
@@ -18,6 +20,28 @@ export function HomePage() {
   const navigate = useNavigate();
   const cwd = useCwd();
   const folderName = cwd ? cwd.split("/").pop() : null;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const switchProject = useCallback(async (path: string) => {
+    const res = await fetch("/api/cwd", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    if (res.ok) {
+      window.location.href = "/";
+    }
+  }, []);
+
+  const handleBrowseSelect = useCallback(
+    (path: string) => {
+      setBrowserOpen(false);
+      switchProject(path);
+    },
+    [switchProject],
+  );
 
   const {
     docs,
@@ -92,8 +116,21 @@ export function HomePage() {
     <>
       <header className={styles.header}>
         {folderName && (
-          <span className={styles.folderName}>{folderName}</span>
+          <button
+            ref={triggerRef}
+            className={styles.folderName}
+            onClick={() => setPickerOpen((v) => !v)}
+          >
+            {folderName}
+          </button>
         )}
+        <CwdPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onBrowse={() => setBrowserOpen(true)}
+          onSelectProject={switchProject}
+          anchorRef={triggerRef}
+        />
         <div className={styles.divider} />
         <div className={styles.docSwitcher}>
           <select
@@ -188,6 +225,12 @@ export function HomePage() {
           </>
         )}
       </div>
+      <DirectoryBrowser
+        open={browserOpen}
+        onCancel={() => setBrowserOpen(false)}
+        onSelect={handleBrowseSelect}
+        initialPath={cwd ?? undefined}
+      />
     </>
   );
 }

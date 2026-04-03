@@ -1,0 +1,187 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  width: 480px;
+  max-height: 560px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #f0efe9;
+}
+
+.title {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a18;
+}
+
+.currentPath {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+  color: #9a9a92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+  min-height: 200px;
+}
+
+.dirRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 16px;
+  background: transparent;
+  cursor: pointer;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  color: #1a1a18;
+  text-align: left;
+}
+
+.dirEntry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  min-width: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.dirEntry:hover {
+  background: #ebeae5;
+}
+
+.parentRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 16px;
+  background: transparent;
+  cursor: pointer;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  color: #9a9a92;
+  text-align: left;
+}
+
+.dirRow:hover {
+  background: #f7f7f4;
+}
+
+.dirRowSelected {
+  background: #eef0ff;
+}
+
+.dirRowSelected:hover {
+  background: #e4e7fc;
+}
+
+.caret {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  color: #b0b0a8;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.dirRow .caret:hover {
+  background: #ebeae5;
+  color: #6a6a62;
+}
+
+.caretOpen {
+  transform: rotate(90deg);
+}
+
+.folderIcon {
+  color: #c4a052;
+  flex-shrink: 0;
+}
+
+.dirName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emptyDir {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  color: #b0b0a8;
+  padding: 8px 16px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #f0efe9;
+}
+
+.cancelBtn {
+  padding: 6px 16px;
+  border: 1px solid #e6e6e0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6a6a62;
+}
+
+.cancelBtn:hover {
+  background: #f7f7f4;
+}
+
+.selectBtn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #1a1a18;
+  cursor: pointer;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.selectBtn:hover {
+  background: #333;
+}
