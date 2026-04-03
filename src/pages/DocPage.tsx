@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, Link } from "react-router";
 import { useDoc } from "../hooks/useDoc";
 import { useChat } from "../hooks/useChat";
 import { useDocs } from "../hooks/useDocs";
@@ -7,8 +7,6 @@ import { DocPanel } from "../components/DocPanel";
 import { ChatPanel } from "../components/ChatPanel";
 import { EmptyState } from "../components/EmptyState";
 import { DeleteConfirm } from "../components/DeleteConfirm";
-import { CwdPicker } from "../components/CwdPicker";
-import { DirectoryBrowser } from "../components/DirectoryBrowser";
 import { useCwdContext } from "../contexts/CwdContext";
 import { Plus, CopySimple, Check, Trash } from "@phosphor-icons/react";
 import styles from "./DocPage.module.css";
@@ -20,28 +18,9 @@ type ViewPhase = "compose" | "chat-focused" | "classic";
 export function DocPage() {
   const { docId } = useParams<{ docId: string }>();
   const navigate = useNavigate();
-  const { cwd, cwdVersion, switchProject } = useCwdContext();
+  const { cwd, cwdVersion } = useCwdContext();
   const folderName = cwd ? cwd.split("/").pop() : null;
   const activeDoc = docId ?? null;
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [browserOpen, setBrowserOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-
-  const handleSwitchProject = useCallback(
-    async (path: string) => {
-      const ok = await switchProject(path);
-      if (ok) navigate("/");
-    },
-    [switchProject, navigate],
-  );
-
-  const handleBrowseSelect = useCallback(
-    (path: string) => {
-      setBrowserOpen(false);
-      handleSwitchProject(path);
-    },
-    [handleSwitchProject],
-  );
 
   const {
     docs,
@@ -139,21 +118,10 @@ export function DocPage() {
     <>
       <header className={styles.header}>
         {folderName && (
-          <button
-            ref={triggerRef}
-            className={styles.folderName}
-            onClick={() => setPickerOpen((v) => !v)}
-          >
+          <Link to="/" className={styles.folderName}>
             {folderName}
-          </button>
+          </Link>
         )}
-        <CwdPicker
-          open={pickerOpen}
-          onClose={() => setPickerOpen(false)}
-          onBrowse={() => setBrowserOpen(true)}
-          onSelectProject={handleSwitchProject}
-          anchorRef={triggerRef}
-        />
         <div className={styles.divider} />
         <div className={styles.docSwitcher}>
           <select
@@ -284,12 +252,6 @@ export function DocPage() {
           </>
         )}
       </div>
-      <DirectoryBrowser
-        open={browserOpen}
-        onCancel={() => setBrowserOpen(false)}
-        onSelect={handleBrowseSelect}
-        initialPath={cwd ?? undefined}
-      />
     </>
   );
 }
