@@ -1,10 +1,12 @@
 # Doku
 
-> A better plan mode
+> A better plan mode for Claude
 
 A document editor with an integrated Claude Code chat panel — think, plan, and write with AI right next to your docs.
 
 Doku runs as a local web app. It stores Markdown documents per directory, so each project gets its own workspace. Claude Code is embedded as a chat panel that can read and edit your documents directly.
+
+<img width="1710" height="983" alt="Screenshot 2026-04-04 at 16 27 34" src="https://github.com/user-attachments/assets/e030c219-57d4-4336-8ec7-cbef91e18427" />
 
 ## Getting Started
 
